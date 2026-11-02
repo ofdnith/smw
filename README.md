@@ -31,6 +31,9 @@ Pulo, correr, cambalhota, item e pausa podem ser trocados em **Opções** (na se
 - Trilha sonora com 19 temas originais, mixados no mesmo volume, e ~45 efeitos gerados por um sintetizador próprio (Web Audio).
 - Save em 3 arquivos, modo assistido, controles de toque, gamepad e remapeamento.
 
+## Arte
+Toda a arte nasce em código, sem nenhum arquivo de imagem: um pequeno escultor de pixel art (`src/engine/pixelart.ts`) desenha formas com rampas de 5 tons, luz de cima-esquerda, sombras frias e brilhos quentes, e contorno escuro seletivo — o acabamento típico dos sprites de 16 bits. Sprites (`src/content/art/`), tiles (`tilesets.ts`), fundos com parallax (`src/game/render/backgrounds.ts`) e o mapa-múndi (`src/game/render/worldmapArt.ts`) usam o mesmo sistema. Para revisar sprites ampliados: `npx vite-node tools/preview-art.ts enemies saida.png 6` (grupos: lumi, bolota, enemies, bosses, items, objects, misc, map).
+
 ## Editor de fases
 Abra **Extras → Editor de Fases** (ou `?editor`, ou `?editor=2-1` para partir de uma fase existente).
 Botão esquerdo pinta, direito apaga, roda rola. `Q`/`E` trocam a peça, `TAB` a categoria, `M` o tema, `[ ]` e `- =` mudam o tamanho, `G` a grade.

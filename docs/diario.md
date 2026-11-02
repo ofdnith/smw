@@ -67,3 +67,25 @@ Pedido: terminar o projeto inteiro, sem pausas para aprovação. Levantei o que 
 **Números**: 223 testes de unidade, 5 cenários e2e, 59 fases validadas por alcance, 19 replays.
 
 **Pendente (depende de gente jogando)**: sensação do pulo e curva de dificuldade das fases novas.
+
+## 2026-11-02 — v1.2: arte nova e colisões mais justas
+Pedido: "o jogo está feio" — melhorar todos os sprites, as ilhas e as colisões. (Também perguntou por que os sprites não são iguais aos de Super Mario World: não podem ser, por serem obra da Nintendo; o alvo passou a ser o *padrão de qualidade* de 16 bits, com arte própria.)
+
+**Diagnóstico**: sprites pequenos e de cor chapada, chão de cor única com ruído, fundos de retângulos, mapa de elipses lisas, fases escuras quase pretas.
+
+**Arte**
+- `src/engine/pixelart.ts`: escultor de pixel art — elipses, retângulos arredondados, polígonos e linhas com rampas de 5 tons geradas por cor base (sombras puxadas para o azul, brilhos para o amarelo), luz de cima-esquerda, contorno seletivo, camadas com contorno próprio (braços e cabeça destacados do corpo), pixels de tinta para olhos. `canvasToFrame` gera imagens grandes direto em pixels.
+- Lumi em 19 poses paramétricas (pernas, braços, rosto, inclinação); capa recolorida por poder. Bolota, 20 inimigos, chefes (a Sombra reaproveita a Lumi com paleta de breu e contorno vermelho), itens, objetos, Dona Ondina, farol e ícones do mapa. Mesmas dimensões e âncoras de antes, então nada desalinhou.
+- Gaivota e lesma antigas olhavam para o lado errado; corrigido de graça.
+- Tiles: contorno nas bordas expostas, grama/areia caindo sobre o barranco, cantos arredondados, textura contínua por ilha, blocos com bisel e brilho, água com espuma, lava e névoa animadas.
+- Fundos em faixas esculpidas com parallax, preenchendo até o pé da tela em salas altas.
+- Mapa-múndi pré-esculpido: costa irregular, água rasa com espuma, planalto com paredão, decoração temática que evita nós e caminhos; névoa que segue a costa.
+- Fases escuras um pouco menos escuras (88% em vez de 94%) para o cenário aparecer; a lanterna continua necessária.
+- `tools/preview-art.ts` renderiza qualquer grupo de sprites ampliado; foi assim que cada sprite foi revisado.
+
+**Colisões** (detalhes em `docs/fisica.md`)
+- Correção de quina (4 px), ajuda na borda (5 px), área de dano menor que o corpo, espinhos e névoa só onde há arte.
+- Defeito antigo corrigido: o corpo entrava até 1 px nas paredes à direita.
+- Replays regerados: o bot agora termina 23 fases (antes 19), inclusive o Barão Cata-Vento.
+
+**Números**: 239 testes de unidade, 5 e2e, 23 replays.

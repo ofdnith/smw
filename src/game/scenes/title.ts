@@ -72,7 +72,7 @@ export class TitleScene implements Scene {
     r.ctx.fill();
     r.ctx.globalAlpha = 1;
     if (Math.floor(this.t / 30) % 2 === 0 && this.t > 20) r.text('APERTE UM BOTAO', VIEW_W / 2, VIEW_H - 16, '#ffffff', 'center', '#000000');
-    r.text('V1.1', 4, VIEW_H - 9, 'rgba(0,0,0,0.5)');
+    r.text('V1.2', 4, VIEW_H - 9, 'rgba(0,0,0,0.5)');
   }
 }
 

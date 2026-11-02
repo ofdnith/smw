@@ -270,7 +270,7 @@ export class LevelScene implements Scene {
       for (let ty = Math.max(0, ty0); ty < Math.min(w.h, ty1); ty++)
         for (let tx = Math.max(0, tx0); tx < Math.min(w.w, tx1); tx++)
           if (w.get(tx, ty) === T.Lamp) lights.push({ x: tx * TILE + 8, y: ty * TILE + 9, r: 44 });
-      r.darkness(lights, 0.94);
+      r.darkness(lights, 0.88);
     }
     // popups
     for (const p of w.popups) r.text(p.text, p.x - camX, p.y - camY - (50 - p.life) * 0.4, p.color, 'center', '#000000');

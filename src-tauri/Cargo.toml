@@ -1,6 +1,6 @@
 [package]
 name = "lumi-arquipelago"
-version = "1.1.0"
+version = "1.2.0"
 description = "Lumi e o Arquipélago dos Faróis"
 edition = "2021"
 
