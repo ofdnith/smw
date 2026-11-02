@@ -60,7 +60,7 @@ export class WorldMapScene implements Scene {
     const lvl = LEVELS[clearedId];
     if (!lvl) return;
     const flag = `farol-${lvl.island}`;
-    if (lvl.kind === 'farol' && !slot.flags.includes(flag) && CUTSCENES[flag]) {
+    if ((lvl.kind === 'farol' || lvl.kind === 'final') && !slot.flags.includes(flag) && CUTSCENES[flag]) {
       slot.flags.push(flag);
       game.persist();
       this.queue.push(() => game.push(new CutsceneScene(CUTSCENES[flag], () => game.pop())));

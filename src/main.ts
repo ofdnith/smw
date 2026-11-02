@@ -56,6 +56,7 @@ game.start();
 // expõe para testes e2e: __step(n, fn) avança n frames com entrada controlada (sem esperar o relógio)
 const w = window as unknown as { __game: Game; __step: (n: number, mask: (frame: number) => number) => void };
 w.__game = game;
+(game as unknown as { levelIds: string[] }).levelIds = Object.keys(LEVELS);
 w.__step = (n, mask) => {
   game.input.override = mask;
   for (let i = 0; i < n; i++) game.update();
