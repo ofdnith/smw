@@ -223,3 +223,20 @@ describe('mecânicas', () => {
     expect(fp.falling).toBe(true);
   });
 });
+
+describe('tiles interativos', () => {
+  it('gota de âmbar no tile é coletada ao passar; plataforma F desmorona', () => {
+    let map = dots(cat(flat(14, H, 3), gap(3, H), flat(23, H, 3)), [[3, H - 4, 's'], [8, H - 4, '$'], [9, H - 4, '$']]);
+    map = hline(map, 14, H - 3, 3, 'F');
+    const w = new World(level([map]), run());
+    const inp = makeInput();
+    step(w, inp, BIT.right, 90);
+    expect(w.run.amber).toBe(2);
+    expect(w.get(8, H - 4)).toBe(T.Empty);
+    // sobe na plataforma F (está no nível do chão, logo à frente) e espera
+    step(w, inp, BIT.right, 46);
+    step(w, inp, 0, 60);
+    const anyGone = [14, 15, 16].some((tx) => w.get(tx, H - 3) === T.Empty);
+    expect(anyGone).toBe(true);
+  });
+});

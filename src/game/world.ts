@@ -116,6 +116,7 @@ export class World implements TileMap {
     this.spawned.clear();
     this.particles = [];
     this.camLockY = this.room.def.lockY !== undefined ? this.room.def.lockY * TILE : null;
+    this.crumbleTimers = new Map();
     this.camMinX = 0;
     this.camMaxX = Infinity;
     this.autoscrollX = this.room.def.autoscroll ?? 0;
@@ -197,6 +198,8 @@ export class World implements TileMap {
 
     this.player.preUpdate();
     this.player.update(this);
+    this.collectAmberTiles();
+    this.updateCrumble();
 
     for (const e of this.entities) {
       if (e.dead) continue;
@@ -268,6 +271,54 @@ export class World implements TileMap {
         if (p.body.y + p.body.h > botLimit) cy += (p.body.y + p.body.h - botLimit) * 0.4;
       }
       this.camY = clamp(cy, 0, maxY);
+    }
+  }
+
+  // ---------- tiles interativos ----------
+
+  /** Gotas de âmbar estáticas ($) sob o corpo de Lumi. */
+  private collectAmberTiles(): void {
+    const p = this.player;
+    if (p.deadTimer >= 0) return;
+    const b = p.body;
+    const tx0 = Math.floor(b.x / TILE), tx1 = Math.floor((b.x + b.w - 1) / TILE);
+    const ty0 = Math.floor(b.y / TILE), ty1 = Math.floor((b.y + b.h - 1) / TILE);
+    for (let ty = Math.max(0, ty0); ty <= Math.min(this.h - 1, ty1); ty++) {
+      for (let tx = Math.max(0, tx0); tx <= Math.min(this.w - 1, tx1); tx++) {
+        if (this.get(tx, ty) !== T.Amber) continue;
+        this.set(tx, ty, T.Empty);
+        this.run.amber++;
+        this.sparkle(tx * TILE + 8, ty * TILE + 8, '#ffd27a', 5, 1);
+        sfx('amber');
+        this.checkAmberLife();
+      }
+    }
+  }
+
+  private crumbleTimers = new Map<number, number>();
+  /** Plataformas que desmoronam (F) depois de pisadas. */
+  private updateCrumble(): void {
+    const b = this.player.body;
+    if (b.onGround && b.groundType === T.Crumble) {
+      for (let tx = Math.floor(b.x / TILE); tx <= Math.floor((b.x + b.w - 1) / TILE); tx++) {
+        const ty = b.groundTy;
+        if (this.get(tx, ty) === T.Crumble) {
+          const idx = ty * this.w + tx;
+          if (!this.crumbleTimers.has(idx)) this.crumbleTimers.set(idx, 28);
+        }
+      }
+    }
+    for (const [idx, t] of this.crumbleTimers) {
+      if (t <= 0) continue;
+      const nt = t - 1;
+      this.crumbleTimers.set(idx, nt);
+      const tx = idx % this.w, ty = Math.floor(idx / this.w);
+      if (nt % 6 === 0 && this.get(tx, ty) === T.Crumble) this.dust(tx * TILE + 8, ty * TILE + 6, 1, '#c8b08a');
+      if (nt === 0 && this.get(tx, ty) === T.Crumble) {
+        this.set(tx, ty, T.Empty);
+        this.breakEffect(tx * TILE, ty * TILE);
+        sfx('blockbreak');
+      }
     }
   }
 

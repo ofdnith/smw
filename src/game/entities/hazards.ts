@@ -98,7 +98,7 @@ export class Spring extends Entity {
     const p = world.player;
     if (p.body.vy > 0 && p.overlaps(this) && p.prevBottom <= this.y + 6) {
       p.body.y = this.y - p.body.h;
-      p.body.vy = p.world && (window as unknown as { __hold?: boolean }).__hold ? -8 : -7.2;
+      p.body.vy = -7.2;
       p.jumping = true;
       p.spinning = false;
       p.body.onGround = false;
