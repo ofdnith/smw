@@ -41,7 +41,7 @@ Ferramentas: `node tools/bot.mjs 1-1` (bot joga uma fase), `node tools/sheet.mjs
 Atalhos de URL para testar: `?level=4-2` abre uma fase; `?map&cleared=1-1,1-2` abre o mapa com fases concluídas.
 
 ## App para Mac (opcional)
-O workflow **App para macOS (Tauri)** (`.github/workflows/mac.yml`) compila um `.app`/`.dmg` nativo num runner macOS do GitHub Actions — rode-o pela aba *Actions* (botão *Run workflow*) ou crie uma tag `v*`. O ícone é gerado na hora a partir do sprite da Lumi (`tools/icon.mjs`). Requer Rust no runner (já incluído no workflow).
+O workflow **App para macOS (Tauri)** (`.github/workflows/mac.yml`) compila um `.app`/`.dmg` nativo num runner macOS do GitHub Actions — rode-o pela aba *Actions* (botão *Run workflow*) ou crie uma tag `v*` — nesse caso o `.dmg` é anexado automaticamente a uma release em https://github.com/ofdnith/smw/releases. O ícone é gerado na hora a partir do sprite da Lumi (`tools/icon.mjs`). Requer Rust no runner (já incluído no workflow).
 
 ## Documentos
 - [`docs/PLANO.md`](docs/PLANO.md) — plano de design e arquitetura

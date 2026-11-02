@@ -81,6 +81,7 @@ export class FileSelectScene implements Scene {
   update(game: Game): void {
     this.t++;
     const inp = game.input.state;
+    if (synth.ready && !sequencer.playing) sequencer.play(MUSIC.titulo);
     const total = Object.values(LEVELS).filter((l) => l.kind !== 'bonus').length;
     void total;
     if (this.confirmDelete >= 0) {
