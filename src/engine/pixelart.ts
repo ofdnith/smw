@@ -321,3 +321,26 @@ export function sculpt(w: number, h: number, mats: Materials, fn: (c: Canvas) =>
   fn(c);
   return c.toString();
 }
+
+/** Gera a imagem direto em pixels (sem limite de cores): para mapas e faixas grandes. */
+export function canvasToFrame(c: Canvas): { img: CanvasImageSource; w: number; h: number; ox: number; oy: number } {
+  const el: HTMLCanvasElement | OffscreenCanvas = typeof document !== 'undefined'
+    ? Object.assign(document.createElement('canvas'), { width: c.w, height: c.h })
+    : new OffscreenCanvas(c.w, c.h);
+  const ctx = el.getContext('2d') as CanvasRenderingContext2D;
+  const data = ctx.createImageData(c.w, c.h);
+  const rgb = new Map<string, [number, number, number]>();
+  const hex = (h: string): [number, number, number] => {
+    let v = rgb.get(h);
+    if (!v) { const n = parseInt(h.slice(1), 16); v = [(n >> 16) & 255, (n >> 8) & 255, n & 255]; rgb.set(h, v); }
+    return v;
+  };
+  for (let i = 0; i < c.w * c.h; i++) {
+    const p = c.px[i];
+    if (!p) continue;
+    const [r, g, b] = hex(p.m < 0 ? c.mats.outline : c.mats.list[p.m].ramp[p.t]);
+    data.data[i * 4] = r; data.data[i * 4 + 1] = g; data.data[i * 4 + 2] = b; data.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(data, 0, 0);
+  return { img: el, w: c.w, h: c.h, ox: 0, oy: 0 };
+}

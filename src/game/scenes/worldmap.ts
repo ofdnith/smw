@@ -18,6 +18,7 @@ import { ITEMS } from '../../content/art/items';
 import { MAP_ICONS } from '../../content/art/mapicons';
 import type { SaveSlot } from '../../engine/save';
 import { CreditsScene } from './credits';
+import { mapBaseFrame, islandRadius } from '../render/worldmapArt';
 
 export interface MapArrival {
   justCleared: string;
@@ -209,28 +210,18 @@ export class WorldMapScene implements Scene {
     r.camY = camY;
     r.shakeX = 0;
     r.shakeY = 0;
-    // mar
-    r.gradient([[0, '#1f6fae'], [1, '#2f8fcf']]);
-    for (let i = 0; i < 40; i++) {
-      const x = ((i * 53 + this.frame * 0.3) % (MAP_W + 40)) - 20;
+    // mar em faixas, com brilhos que vão e vêm
+    const seaBands = ['#1a5f9e', '#1d66a6', '#206dae', '#2374b6', '#267bbe', '#2a82c4'];
+    seaBands.forEach((col, i) => r.fillRect(0, Math.floor((i * VIEW_H) / seaBands.length), VIEW_W, Math.ceil(VIEW_H / seaBands.length) + 1, col));
+    for (let i = 0; i < 46; i++) {
+      const x = ((i * 53 + this.frame * 0.25) % (MAP_W + 40)) - 20;
       const y = (i * 37) % MAP_H;
-      r.fillRect(x, y + Math.sin((this.frame + i * 10) / 30) * 2, 10, 1, 'rgba(255,255,255,0.35)', true);
+      const ph = (this.frame + i * 17) % 120;
+      if (ph < 80) r.fillRect(x, y + Math.sin((this.frame + i * 10) / 30) * 2, ph < 40 ? 6 : 3, 1, ph < 40 ? '#8fd0f4' : '#5aaedc', true);
     }
-    // neblina sobre ilhas não liberadas
-    for (const isl of ISLANDS) {
-      // sombra/costa
-      r.ctx.fillStyle = isl.edge;
-      r.ctx.beginPath();
-      r.ctx.ellipse(isl.x - camX, isl.y - camY + 3, isl.rx + 4, isl.ry + 4, 0, 0, Math.PI * 2);
-      r.ctx.fill();
-      r.ctx.fillStyle = isl.color;
-      r.ctx.beginPath();
-      r.ctx.ellipse(isl.x - camX, isl.y - camY, isl.rx, isl.ry, 0, 0, Math.PI * 2);
-      r.ctx.fill();
-      // detalhes por tema
-      this.islandDetails(r, isl, camX, camY);
-    }
-    // caminhos
+    // ilhas (pré-esculpidas)
+    r.ctx.drawImage(mapBaseFrame().img, -camX, -camY);
+    // caminhos: pegadas com contorno
     for (const e of EDGES) {
       const unlocked = this.unlocked(e, slot);
       if (!unlocked) continue;
@@ -238,26 +229,35 @@ export class WorldMapScene implements Scene {
       if (!this.nodeReachable(a, slot) || !this.nodeReachable(b, slot)) continue;
       let frac = 1;
       if (e === this.revealEdge) frac = clamp(this.revealT / 60, 0, 1);
-      const n = Math.floor(Math.hypot(b.x - a.x, b.y - a.y) / 6);
-      // revela a partir do nó atual
+      const n = Math.floor(Math.hypot(b.x - a.x, b.y - a.y) / 5);
       const fromA = a.id === this.node.id;
       for (let i = 1; i < n; i++) {
         const t = i / n;
         if (fromA ? t > frac : 1 - t > frac) continue;
-        r.fillRect(a.x + (b.x - a.x) * t - 1, a.y + (b.y - a.y) * t - 1, 2, 2, 'rgba(255,255,255,0.8)', true);
+        const px = Math.round(a.x + (b.x - a.x) * t), py = Math.round(a.y + (b.y - a.y) * t);
+        r.fillRect(px - 2, py - 1, 4, 3, '#3a2410', true);
+        r.fillRect(px - 1, py - 2, 2, 5, '#3a2410', true);
+        r.fillRect(px - 1, py - 1, 2, 2, '#f4e0b0', true);
       }
     }
-    // névoa nas ilhas sem acesso
+    // névoa nas ilhas sem acesso (segue a costa)
     for (const isl of ISLANDS) {
       const reachable = NODES.some((n) => n.island === isl.id && this.nodeReachable(n, slot));
-      if (!reachable) {
-        r.ctx.globalAlpha = 0.75;
-        r.ctx.fillStyle = '#9fb3c8';
+      if (reachable) continue;
+      const wob = Math.sin(this.frame / 60) * 2;
+      for (const [alpha, grow, col] of [[0.55, 10, '#b8c8dc'], [0.6, 4, '#d8e2ee']] as [number, number, string][]) {
+        r.ctx.globalAlpha = alpha;
+        r.ctx.fillStyle = col;
         r.ctx.beginPath();
-        r.ctx.ellipse(isl.x - camX + Math.sin(this.frame / 60) * 2, isl.y - camY, isl.rx + 6, isl.ry + 6, 0, 0, Math.PI * 2);
+        for (let k = 0; k <= 48; k++) {
+          const ang = (k / 48) * Math.PI * 2;
+          const rr = islandRadius(isl, ang) + grow + Math.sin(ang * 5 + this.frame / 40) * 2;
+          const px = isl.x - camX + wob + Math.cos(ang) * rr, py = isl.y - camY + 3 + Math.sin(ang) * rr;
+          if (k === 0) r.ctx.moveTo(px, py); else r.ctx.lineTo(px, py);
+        }
         r.ctx.fill();
-        r.ctx.globalAlpha = 1;
       }
+      r.ctx.globalAlpha = 1;
     }
     // nós
     for (const n of NODES) {
@@ -369,25 +369,6 @@ export class WorldMapScene implements Scene {
       case 'bridge':
         r.fillRect(x - 1, y - 1, 3, 3, 'rgba(255,255,255,0.8)', true);
         break;
-    }
-  }
-
-  private islandDetails(r: Renderer, isl: { id: number; x: number; y: number; rx: number; ry: number }, camX: number, camY: number): void {
-    const x = isl.x - camX, y = isl.y - camY;
-    const h = (i: number): number => ((Math.sin(i * 12.9898 + isl.id * 78.233) * 43758.5453) % 1 + 1) % 1;
-    for (let i = 0; i < 10; i++) {
-      const a = h(i) * Math.PI * 2, d = 0.3 + h(i + 50) * 0.6;
-      const px = x + Math.cos(a) * isl.rx * d, py = y + Math.sin(a) * isl.ry * d;
-      switch (isl.id) {
-        case 1: r.fillRect(px, py - 6, 1, 6, '#a8844a', false); r.fillRect(px - 3, py - 8, 7, 2, '#4fa36a', false); break;
-        case 2: r.fillRect(px - 2, py - 4, 5, 5, '#2f6a2a', false); r.fillRect(px, py - 6, 1, 3, '#2f6a2a', false); break;
-        case 3: r.fillRect(px - 2, py - 3, 4, 4, '#b8b8c8', false); break;
-        case 4: r.fillRect(px, py - 2, 2, 3, ['#ff9ac1', '#8fd1b0', '#f2c98a'][i % 3], false); break;
-        case 5: r.fillRect(px - 1, py - 4, 2, 5, '#ffffff', false); break;
-        case 6: r.fillRect(px - 2, py - 5, 4, 6, '#0f1a24', false); break;
-        case 7: if (i < 4) r.fillRect(px - 1, py - 4, 3, 4, '#8a8f9e', false); break;
-        case 8: if (this.frame % 60 < 30 || i % 2) r.fillRect(px, py, 1, 1, '#ffffff', false); break;
-      }
     }
   }
 }

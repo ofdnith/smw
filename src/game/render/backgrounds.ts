@@ -5,8 +5,8 @@
  */
 import { Renderer, VIEW_W, VIEW_H } from '../../engine/renderer';
 import type { Theme } from '../level/format';
-import { Canvas, Materials } from '../../engine/pixelart';
-import { compileFrame, type Frame } from '../../engine/sprites';
+import { Canvas, Materials, canvasToFrame } from '../../engine/pixelart';
+import type { Frame } from '../../engine/sprites';
 import { LIGHTHOUSE } from '../../content/art/npcs';
 import { getSprite } from '../../engine/sprites';
 
@@ -35,11 +35,9 @@ function strip(key: string, w: number, hgt: number, mats: Materials, draw: (c: C
   const c = new Canvas(w, hgt, mats);
   draw(c);
   if (outline) c.outline();
-  const pal = mats.palette();
   const p = c.get(Math.floor(w / 2), hgt - 1);
   const bottom = p ? (p.m < 0 ? mats.outline : mats.list[p.m].ramp[p.t]) : null;
-  const f: Strip = { ...compileFrame(c.toString(), pal), bottom };
-  void pal;
+  const f: Strip = { ...canvasToFrame(c), bottom };
   cache.set(key, f);
   return f;
 }
