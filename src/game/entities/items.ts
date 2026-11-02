@@ -305,18 +305,23 @@ export class Goal extends Entity {
     this.despawnOffscreen = false;
     this.alwaysActive = true;
   }
+  /** borda direita de Lumi no quadro anterior (para detectar quem pula por cima do arco) */
+  private lastRight = Number.NaN;
   update(world: World): void {
     this.flagY = (this.anim * 1.3) % 56;
     // barreira: Lumi não passa sem tocar
     const p = world.player;
-    if (world.event === 'none' && p.x + p.w > this.x && p.x < this.x + this.w && p.y + p.h > this.y && p.y < this.y + this.h) {
-      this.onTouch(world);
-    }
+    const right = p.x + p.w;
+    const overlap = right > this.x && p.x < this.x + this.w && p.y + p.h > this.y && p.y < this.y + this.h;
+    // passou por cima do arco (cruzou da esquerda para a direita acima dele): também conta
+    const jumpedOver = this.lastRight <= this.x && right > this.x && p.y + p.h <= this.y;
+    this.lastRight = right;
+    if (world.event === 'none' && (overlap || jumpedOver)) this.onTouch(world);
   }
   override onTouch(world: World): boolean {
     if (world.event !== 'none') return false;
     const p = world.player;
-    const rel = 1 - (p.cy - this.y) / this.h; // 0 embaixo, 1 em cima
+    const rel = Math.min(1, 1 - (p.cy - this.y) / this.h); // 0 embaixo, 1 em cima (ou acima)
     const bonus = Math.max(1, Math.round(rel * 10)) * (rel > 0.85 ? 3 : 1);
     const hitFlag = Math.abs(p.cy - (this.y + this.flagY + 6)) < 10;
     const total = bonus + (hitFlag ? 10 : 0);

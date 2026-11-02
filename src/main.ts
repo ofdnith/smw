@@ -6,12 +6,13 @@ import { TimeAttackScene } from './game/scenes/extras';
 import { WorldMapScene } from './game/scenes/worldmap';
 import { synth } from './engine/audio/synth';
 import { LEVELS } from './content/levels';
-import { PHYS } from './game/entities/player';
+import { PHYS, bindInput } from './game/entities/player';
 import { sequencer } from './engine/audio/sequencer';
 import { MUSIC } from './content/music';
 import { sfx } from './engine/audio/sfx';
 import { ArtPreviewScene } from './tools/artpreview';
 import { EditorScene } from './tools/editor';
+import { checkReplay, type Replay } from './game/replay';
 import { getSprite } from './engine/sprites';
 import { LUMI, LUMI_PALETTE } from './content/art/lumi';
 
@@ -32,6 +33,19 @@ window.addEventListener('pointerdown', unlock);
 // atalhos de desenvolvimento
 window.addEventListener('keydown', (e) => {
   if (e.code === 'F1') { game.debug = !game.debug; e.preventDefault(); }
+  if (e.code === 'F8') {
+    // grava um replay: recomeça a fase atual e grava até a chegada (ou até apertar F8 de novo)
+    e.preventDefault();
+    const top = game.top;
+    if (top instanceof LevelScene) {
+      if (top.recording) top.saveRecording();
+      else if (!top.timeAttack) {
+        const fresh = new LevelScene(top.level, game);
+        game.replace(fresh);
+        fresh.startRecording();
+      }
+    }
+  }
   if (!game.debug) return;
   const step = e.shiftKey ? 0.1 : 0.02;
   if (e.code === 'F2') PHYS.jumpV += step;
@@ -78,6 +92,12 @@ const w = window as unknown as { __game: Game; __step: (n: number, mask: (frame:
 w.__game = game;
 (game as unknown as { levelIds: string[] }).levelIds = Object.keys(LEVELS);
 (window as unknown as { __audio: unknown }).__audio = { synth, sequencer, MUSIC, sfx };
+// confere um replay no motor do navegador (o teste e2e compara com o hash gerado no Node)
+(window as unknown as { __replay: (r: Replay) => { hash: string; event: string } }).__replay = (r) => {
+  const res = checkReplay(LEVELS[r.level], r);
+  bindInput(game.input.state);
+  return res;
+};
 (window as unknown as { __lumiFrame: () => CanvasImageSource }).__lumiFrame = () => getSprite({ palette: LUMI_PALETTE, frames: LUMI.victory }).frames[0].img;
 w.__step = (n, mask) => {
   game.input.override = mask;

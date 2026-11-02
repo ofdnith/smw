@@ -30,6 +30,19 @@ function step(w: World, inp: InputState, mask: number, n = 1): void {
 }
 
 describe('mecânicas', () => {
+  it('pular por cima do arco de chegada também termina a fase', () => {
+    const map = dots(flat(40, H, 3), [[3, H - 4, 's'], [20, H - 4, 'g']]);
+    const w = new World(level([map]), run());
+    const inp = makeInput();
+    step(w, inp, 0, 5);
+    const goal = w.entities.find((e) => e.kind === 'goal')!;
+    // coloca Lumi no ar, acima do arco, e a empurra para a direita
+    w.player.placeAt(goal.x - 30, goal.y - 10);
+    w.player.body.vy = -2;
+    step(w, inp, BIT.right | BIT.run, 40);
+    expect(w.event).toBe('goal');
+  });
+
   it('monta na Bolota, rola e quebra bloco rachado', () => {
     let map = dots(flat(60, H, 3), [[3, H - 4, 's'], [8, H - 4, 'e']]);
     map = box(map, 20, H - 5, 2, 2, 'B');

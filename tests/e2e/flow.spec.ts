@@ -132,3 +132,77 @@ test('todas as fases abrem e rodam 300 frames sem erro', async ({ page }) => {
   }
   expect(errors).toEqual([]);
 });
+
+test('replays dão o mesmo estado no navegador e no Node (determinismo entre motores)', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('http://localhost:5195/?level=1-1');
+  await page.waitForTimeout(300);
+  await stop(page);
+  const result = await page.evaluate(async () => {
+    const ids = (window.__game as unknown as { levelIds: string[] }).levelIds;
+    const out: { id: string; ok: boolean; got: string; want: string }[] = [];
+    for (const id of ids) {
+      const res = await fetch(`/tests/replays/${id}.json`);
+      if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) continue;
+      const r = await res.json() as { hash: string; event: string };
+      const got = (window as unknown as { __replay: (r: unknown) => { hash: string; event: string } }).__replay(r);
+      out.push({ id, ok: got.hash === r.hash && got.event === r.event, got: got.hash, want: r.hash });
+    }
+    return out;
+  });
+  expect(result.length).toBeGreaterThanOrEqual(10);
+  expect(result.filter((r) => !r.ok)).toEqual([]);
+  expect(errors).toEqual([]);
+});
+
+test('extras, opções e contra-relógio abrem pela seleção de arquivo', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(String(e)));
+  await page.goto('http://localhost:5195/');
+  await page.waitForTimeout(300);
+  await page.evaluate(() => {
+    const ids = (window.__game as unknown as { levelIds: string[] }).levelIds;
+    const slot = { version: 1, cleared: ids, secret: [], pearls: Object.fromEntries(ids.map((id) => [id, 7])), lives: 9, amber: 50, power: 'none', reserve: 'none', hasBolota: true, node: 'i1-start', playtimeFrames: 0, flags: ['intro'], deaths: 0 };
+    localStorage.setItem('lumi.save.v1', JSON.stringify({ version: 1, slots: [slot, null, null], settings: {}, records: {} }));
+  });
+  await page.goto('http://localhost:5195/');
+  await page.waitForTimeout(300);
+  await stop(page);
+  await step(page, 30, 0);
+  await press(page, 16);
+  await skipTransition(page);
+  for (let i = 0; i < 3; i++) await press(page, 8);
+  await press(page, 16);
+  await skipTransition(page);
+  expect(await sceneName(page)).toBe('ExtrasScene');
+  // contra-relógio: terceira opção
+  await press(page, 8);
+  await press(page, 8);
+  await press(page, 16);
+  await skipTransition(page);
+  expect(await sceneName(page)).toBe('TimeAttackScene');
+  await press(page, 16);
+  await skipTransition(page);
+  expect(await sceneName(page)).toBe('LevelScene');
+  // desiste pela pausa
+  await press(page, 128);
+  for (let i = 0; i < 5; i++) await press(page, 8);
+  await press(page, 16);
+  await skipTransition(page);
+  expect(await sceneName(page)).toBe('TimeAttackScene');
+  // o arquivo do jogador não foi tocado
+  const slot = await page.evaluate(() => (window.__game as unknown as { save: { slots: { deaths: number }[] } }).save.slots[0]);
+  expect(slot.deaths).toBe(0);
+  // volta e abre as opções
+  await press(page, 64);
+  await skipTransition(page);
+  await press(page, 64);
+  await skipTransition(page);
+  expect(await sceneName(page)).toBe('FileSelectScene');
+  await press(page, 2);
+  await press(page, 16);
+  await skipTransition(page);
+  expect(await sceneName(page)).toBe('OptionsScene');
+  expect(errors).toEqual([]);
+});

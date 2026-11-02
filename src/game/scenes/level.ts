@@ -16,6 +16,7 @@ import { GameOverScene } from './gameover';
 import { MUSIC } from '../../content/music';
 import { PHYS } from '../entities/player';
 import { ITEMS } from '../../content/art/items';
+import { encodeInputs, levelSeed, stateHash, type Replay } from '../replay';
 
 export class LevelScene implements Scene {
   world: World;
@@ -32,6 +33,8 @@ export class LevelScene implements Scene {
   readonly timeAttack: boolean;
   finalTime = -1;
   newRecord = false;
+  /** gravação de replay (F8): entrada de cada quadro simulado e estado inicial */
+  recording: { masks: number[]; run: RunState } | null = null;
 
   constructor(level: LevelDef, game: Game, checkpoint: { room: number; x: number; y: number } | null = null, opts: { timeAttack?: boolean } = {}) {
     this.level = level;
@@ -53,7 +56,8 @@ export class LevelScene implements Scene {
       };
     }
     this.checkpoint = checkpoint;
-    this.world = new World(level, this.run, checkpoint, game.seed + level.id.length);
+    this.world = new World(level, { ...this.run }, checkpoint, game.seed + level.id.length);
+    this.run = this.world.run;
     this.world.player.power = this.run.power as 'none';
     if (checkpoint) this.world.checkpoint = checkpoint;
   }
@@ -82,7 +86,9 @@ export class LevelScene implements Scene {
       return;
     }
     const prevRoom = w.roomIndex;
+    if (this.recording) this.recording.masks.push(inp.held);
     w.update();
+    if (this.recording && w.event !== 'none' && w.eventTimer === 30) this.saveRecording();
     this.tileAnim = Math.floor(w.frame / 8);
     if (w.roomIndex !== prevRoom) {
       const name = w.room.def.music ?? this.level.music;
@@ -93,6 +99,30 @@ export class LevelScene implements Scene {
     synth.setUnderwater(w.player.body.inWater);
 
     if (w.event !== 'none') this.handleEvent(game);
+  }
+
+  /** Começa a gravar um replay (a fase deve ter acabado de começar). */
+  startRecording(): void {
+    this.recording = { masks: [], run: { ...this.run } };
+  }
+
+  /** Encerra a gravação e baixa o replay como JSON (formato de tests/replays). */
+  saveRecording(): Replay | null {
+    const rec = this.recording;
+    if (!rec) return null;
+    this.recording = null;
+    const replay: Replay = {
+      level: this.level.id, seed: levelSeed(this.level), inputs: encodeInputs(rec.masks), frames: rec.masks.length,
+      event: this.world.event, hash: stateHash(this.world), run: rec.run,
+    };
+    try {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(replay, null, 1)], { type: 'application/json' }));
+      a.download = `${this.level.id}.json`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch { /* sem download (testes) */ }
+    return replay;
   }
 
   /** Sai do contra-relógio de volta para a lista de fases. */
@@ -248,6 +278,7 @@ export class LevelScene implements Scene {
     drawHud(r, w, this.level, game, this.timeAttack ? { time: this.finalTime >= 0 ? this.finalTime : w.time, best: game.save.records[this.level.id], record: this.newRecord } : undefined);
 
     if (game.debug) this.drawDebug(r, game);
+    if (this.recording && Math.floor(w.frame / 20) % 2 === 0) { r.circle(VIEW_W - 8, VIEW_H - 8, 3, '#ff3a3a', false); r.text('REC', VIEW_W - 14, VIEW_H - 11, '#ff3a3a', 'right'); }
   }
 
   private drawTiles(r: Renderer, camX: number, camY: number, pass: 'back' | 'main' | 'front'): void {
