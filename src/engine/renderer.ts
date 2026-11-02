@@ -32,13 +32,16 @@ export class Renderer {
 
   resize(): void {
     const ww = window.innerWidth, wh = window.innerHeight;
-    const s = Math.max(1, Math.floor(Math.min(ww / VIEW_W, wh / VIEW_H)));
+    const raw = Math.min(ww / VIEW_W, wh / VIEW_H);
+    // escala inteira quando possível (nitidez); em telas pequenas (celular) aceita fração para preencher
+    const s = raw >= 2 ? Math.floor(raw) : Math.max(1, raw);
     this.scale = s;
-    const dpr = 1;
-    this.screen.width = VIEW_W * s * dpr;
-    this.screen.height = VIEW_H * s * dpr;
-    this.screen.style.width = `${VIEW_W * s}px`;
-    this.screen.style.height = `${VIEW_H * s}px`;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const cssW = Math.floor(VIEW_W * s), cssH = Math.floor(VIEW_H * s);
+    this.screen.width = Math.round(cssW * dpr);
+    this.screen.height = Math.round(cssH * dpr);
+    this.screen.style.width = `${cssW}px`;
+    this.screen.style.height = `${cssH}px`;
     this.sctx.imageSmoothingEnabled = false;
   }
 
