@@ -32,6 +32,23 @@ export interface Body {
   inWater: boolean;
   /** ignora colisão com tiles (ex.: morrendo) */
   noclip: boolean;
+  /** correção de quina: cabeça que raspa a quina de um bloco é empurrada para o lado (jogador) */
+  cornerCorrect?: boolean;
+  /** ajuda na borda: caindo rente a um degrau, sobe nele se os pés estão só um pouco abaixo (jogador) */
+  ledgeAssist?: boolean;
+}
+
+/** Até quantos pixels de sobreposição a cabeça desliza para o lado em vez de bater. */
+export const CORNER_SLIDE = 4;
+/** Até quantos pixels abaixo da borda os pés ainda sobem no degrau. */
+export const LEDGE_ASSIST = 5;
+
+/** A caixa encosta em algum tile sólido? */
+function boxHitsSolid(map: TileMap, x: number, y: number, w: number, h: number): boolean {
+  const tx0 = Math.floor(x / TILE), tx1 = Math.floor((x + w - EPS) / TILE);
+  const ty0 = Math.floor(y / TILE), ty1 = Math.floor((y + h - EPS) / TILE);
+  for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) if (isSolid(tileAt(map, tx, ty))) return true;
+  return false;
 }
 
 export function makeBody(x: number, y: number, w: number, h: number): Body {
@@ -84,26 +101,26 @@ export function moveBody(b: Body, map: TileMap): void {
     const slopeImmune = isSlope(feetTile) || isSlope(belowTile) || (prevSlope !== 0 && wasOnGround);
     const ty0 = Math.floor(b.y / TILE);
     const ty1 = Math.floor((b.y + b.h - EPS) / TILE);
-    if (b.vx > 0) {
-      const tx = Math.floor((b.x + b.w - 1) / TILE);
+    const dir = b.vx > 0 ? 1 : b.vx < 0 ? -1 : 0;
+    if (dir !== 0) {
+      const tx = dir > 0 ? Math.floor((b.x + b.w - EPS) / TILE) : Math.floor(b.x / TILE);
+      const blocked: number[] = [];
       for (let ty = ty0; ty <= ty1; ty++) {
         const t = tileAt(map, tx, ty);
-        if (isSolid(t) && !(slopeImmune && ty >= slopeRow)) {
-          b.x = tx * TILE - b.w;
-          b.vx = 0;
-          b.hitWall = 1;
-          break;
-        }
+        if (isSolid(t) && !(slopeImmune && ty >= slopeRow)) blocked.push(ty);
       }
-    } else if (b.vx < 0) {
-      const tx = Math.floor(b.x / TILE);
-      for (let ty = ty0; ty <= ty1; ty++) {
-        const t = tileAt(map, tx, ty);
-        if (isSolid(t) && !(slopeImmune && ty >= slopeRow)) {
-          b.x = (tx + 1) * TILE;
+      if (blocked.length) {
+        // ajuda na borda: só a linha dos pés bate, os pés estão pouco abaixo do topo e há espaço em cima
+        const feetRow = blocked.length === 1 && blocked[0] === ty1 ? ty1 : -1;
+        const intrusion = b.y + b.h - feetRow * TILE;
+        if (b.ledgeAssist && feetRow >= 0 && !wasOnGround && b.vy >= -0.5 && intrusion > 0 && intrusion <= LEDGE_ASSIST
+          && !boxHitsSolid(map, b.x, feetRow * TILE - b.h, b.w, b.h)) {
+          b.y = feetRow * TILE - b.h;
+          b.vy = 0;
+        } else {
+          b.x = dir > 0 ? tx * TILE - b.w : (tx + 1) * TILE;
           b.vx = 0;
-          b.hitWall = -1;
-          break;
+          b.hitWall = dir;
         }
       }
     }
@@ -143,7 +160,7 @@ export function moveBody(b: Body, map: TileMap): void {
   }
 
   const tx0 = Math.floor(b.x / TILE);
-  const tx1 = Math.floor((b.x + b.w - 1) / TILE);
+  const tx1 = Math.floor((b.x + b.w - EPS) / TILE);
   if (!onSlopeNow && b.vy > 0) {
     const ty = Math.floor((b.y + b.h - EPS) / TILE);
     let best = -1;
@@ -175,6 +192,20 @@ export function moveBody(b: Body, map: TileMap): void {
     }
   } else if (b.vy < 0) {
     const ty = Math.floor(b.y / TILE);
+    // correção de quina: um único tile raspando a borda da cabeça empurra o corpo para o lado
+    if (b.cornerCorrect) {
+      const hits: number[] = [];
+      for (let tx = tx0; tx <= tx1; tx++) if (isSolid(tileAt(map, tx, ty))) hits.push(tx);
+      if (hits.length === 1) {
+        const tx = hits[0];
+        const ov = Math.min(b.x + b.w, (tx + 1) * TILE) - Math.max(b.x, tx * TILE);
+        const shift = tx * TILE + TILE / 2 < b.x + b.w / 2 ? (tx + 1) * TILE - b.x : tx * TILE - (b.x + b.w);
+        if (ov > 0 && ov <= CORNER_SLIDE && !boxHitsSolid(map, b.x + shift, b.y, b.w, b.h)) {
+          b.x += shift;
+          return finishY(b, map);
+        }
+      }
+    }
     // escolhe o tile mais sobreposto horizontalmente para bater (sensação de precisão)
     let bestTx = -1;
     let bestOverlap = 0;
@@ -200,7 +231,13 @@ export function moveBody(b: Body, map: TileMap): void {
     }
   }
 
-  // chão: se parado em cima (vy == 0) de sólido, continua no chão
+  finishY(b, map);
+}
+
+/** Fim do passo: chão quando parado em cima de sólido, e água pelo centro do corpo. */
+function finishY(b: Body, map: TileMap): void {
+  const tx0 = Math.floor(b.x / TILE);
+  const tx1 = Math.floor((b.x + b.w - EPS) / TILE);
   if (!b.onGround && b.vy === 0) {
     const ty = Math.floor((b.y + b.h) / TILE);
     if ((b.y + b.h) % TILE === 0) {
@@ -216,8 +253,6 @@ export function moveBody(b: Body, map: TileMap): void {
       }
     }
   }
-
-  // água: pelo centro do corpo
   const ct = tileAt(map, Math.floor((b.x + b.w / 2) / TILE), Math.floor((b.y + b.h / 2) / TILE));
   b.inWater = isWater(ct);
   b.dropThrough = false;

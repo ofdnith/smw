@@ -30,3 +30,17 @@ Unidades: pixels por frame a 60 Hz. Tile = 16 px. Hitbox de Lumi: 10×20 px (10�
 
 ## Determinismo
 Toda a lógica usa apenas `+ − × ÷`, `Math.floor/round` e seno por tabela (`tsin`), com PRNG próprio (`Rng`). O resultado é idêntico em qualquer navegador, o que permite os testes de simulação (`tests/unit/*.test.ts`) e o bot (`tools/bot.mjs`).
+
+## Colisões (v1.2)
+
+| Regra | Valor | Por quê |
+|---|---|---|
+| Correção de quina | até 4 px | a cabeça que raspa a quina de um bloco desliza para o lado e o pulo continua, em vez de parar seco |
+| Ajuda na borda | até 5 px | caindo rente a um degrau, os pés sobem nele em vez de escorregar pela parede (só no ar; andando no chão não escala) |
+| Área de dano da Lumi | corpo menos 2 px de cada lado e 4 px no topo | encostar de raspão num inimigo não machuca; o pisão continua usando o corpo inteiro |
+| Caixa do inimigo para dano | encolhida até 2 px nas laterais e no topo | idem |
+| Espinhos | só a parte de baixo do tile (onde há pontas) | encostar ao lado, acima das pontas, não machuca |
+| Névoa/lava | abaixo da crista (3 px) | idem |
+| Parede à direita | margem mínima em vez de 1 px | antes o corpo entrava até 1 px nas paredes à direita (à esquerda era exato) |
+
+Os valores vivem em `src/game/physics/tilecollision.ts` (`CORNER_SLIDE`, `LEDGE_ASSIST`) e em `src/game/entities/player.ts` (`HURT_INSET_X`, `HURT_INSET_TOP`). Testes em `tests/unit/collisions.test.ts`.

@@ -49,6 +49,9 @@ export function bindInput(i: InputState): void {
 }
 
 const SMALL_H = 20;
+/** Área de dano: recuo lateral e no topo em relação ao corpo (encostar de raspão não machuca). */
+const HURT_INSET_X = 2;
+const HURT_INSET_TOP = 4;
 const MOUNT_H = 28;
 const BODY_W = 10;
 
@@ -96,6 +99,8 @@ export class Player extends Entity {
   constructor(x: number, y: number) {
     super(x, y - SMALL_H, BODY_W, SMALL_H);
     this.facing = 1;
+    this.body.cornerCorrect = true;
+    this.body.ledgeAssist = true;
   }
 
   placeAt(x: number, y: number): void {
@@ -503,11 +508,15 @@ export class Player extends Entity {
     const b = this.body;
     // espinhos: tile sob os pés ou tocando o corpo
     const pts: [number, number][] = [
-      [b.x + 2, b.y + b.h - 1], [b.x + b.w - 2, b.y + b.h - 1], [b.x + 2, b.y + 2], [b.x + b.w - 2, b.y + 2],
-      [b.x + 1, b.y + b.h / 2], [b.x + b.w - 1, b.y + b.h / 2],
+      [b.x + 3, b.y + b.h - 1], [b.x + b.w - 3, b.y + b.h - 1], [b.x + 3, b.y + 3], [b.x + b.w - 3, b.y + 3],
+      [b.x + 2, b.y + b.h / 2], [b.x + b.w - 2, b.y + b.h / 2],
     ];
     for (const [x, y] of pts) {
       const t = tileTypeAt(world, x, y);
+      // só conta onde a arte tem pontas (espinhos ocupam a parte de baixo do tile) ou névoa (abaixo da crista)
+      const ly = ((y % TILE) + TILE) % TILE;
+      if (t === T.Spike && ly < 6) continue;
+      if (t === T.Death && ly < 3) continue;
       if (t === T.Spike) {
         if (this.mounted && y > b.y + b.h - 4) {
           // Bolota aguenta espinhos no chão
@@ -735,7 +744,7 @@ export class Player extends Entity {
         continue;
       }
       if (e.projectile) {
-        if (this.kickGrace === 0 && e.hurts && !(e.kind === 'orb')) this.hurt(world);
+        if (this.kickGrace === 0 && e.hurts && !(e.kind === 'orb') && this.hurtboxTouches(e)) this.hurt(world);
         continue;
       }
       // itens, gatilhos: a própria entidade trata
@@ -785,7 +794,17 @@ export class Player extends Entity {
       }
       return;
     }
+    // contato de raspão com inimigo ativo não machuca: a área de dano é menor que o corpo
+    if (e.isEnemy && e.stun === 0 && !this.hurtboxTouches(e)) return;
     if (e.onTouch(world)) this.hurt(world);
+  }
+
+  /** Área de dano da Lumi (menor que o corpo) contra a caixa do inimigo levemente encolhida. */
+  hurtboxTouches(e: Entity): boolean {
+    const b = this.body, o = e.body;
+    const ex = o.x + Math.min(2, o.w / 4), ew = Math.max(2, o.w - Math.min(4, o.w / 2));
+    const ey = o.y + Math.min(2, o.h / 4), eh = Math.max(2, o.h - Math.min(2, o.h / 4));
+    return aabb(b.x + HURT_INSET_X, b.y + HURT_INSET_TOP, b.w - HURT_INSET_X * 2, b.h - HURT_INSET_TOP, ex, ey, ew, eh);
   }
 
   hurt(world: World): void {
