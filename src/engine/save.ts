@@ -56,7 +56,8 @@ export function newSlot(): SaveSlot {
 }
 
 export function defaultSettings(): Settings {
-  return { music: 7, sfx: 8, assist: false, touch: false };
+  const touch = typeof window !== 'undefined' && ('ontouchstart' in window || navigator.maxTouchPoints > 0) && !matchMedia('(pointer: fine)').matches;
+  return { music: 7, sfx: 8, assist: false, touch };
 }
 
 function storage(): Storage | null {

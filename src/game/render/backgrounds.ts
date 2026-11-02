@@ -11,6 +11,8 @@ function h(x: number, y = 0): number {
 export interface BgOpts {
   dark?: boolean;
   night?: boolean;
+  /** sala submersa (recife): fundo subaquático */
+  underwater?: boolean;
   frame: number;
 }
 
@@ -57,6 +59,21 @@ export function drawBackground(r: Renderer, theme: Theme, camX: number, camY: nu
       break;
     }
     case 'recife': {
+      if (!o.underwater) {
+        // à beira do recife: céu de fim de tarde, mar e corais na areia
+        r.gradient([[0, '#5fa8e8'], [0.55, '#ffd1dc'], [1, '#ffe8c8']]);
+        sun(r, 70, 40, '#fff0b0');
+        clouds(r, camX, 0.15, 18, '#ffffff', f);
+        const seaY = 112 - camY * 0.1;
+        r.fillRect(0, seaY, VIEW_W, VIEW_H - seaY, '#2f8fcf');
+        for (let i = 0; i < 12; i++) {
+          const x = ((i * 41 - camX * 0.25 + f * 0.3) % (VIEW_W + 40)) - 20;
+          r.fillRect(x, seaY + 4 + (i % 3) * 9, 14, 1, '#bfe9ff');
+        }
+        hills(r, camX, 0.4, 134 - camY * 0.3, '#f2c98a', 70, 16, 7);
+        corals(r, camX, 0.6, 160 - camY * 0.5);
+        break;
+      }
       r.gradient([[0, '#2f8fcf'], [0.5, '#1f6fae'], [1, '#143f6f']]);
       // raios de luz
       for (let i = 0; i < 5; i++) {

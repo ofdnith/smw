@@ -156,7 +156,7 @@ export class LevelScene implements Scene {
     }
     w.darkLights = [];
 
-    drawBackground(r, theme, camX, camY, { frame: w.frame, dark: w.room.def.dark });
+    drawBackground(r, theme, camX, camY, { frame: w.frame, dark: w.room.def.dark, underwater: w.room.def.water !== undefined });
     this.drawTiles(r, camX, camY, 'back');
     for (const e of w.entities) if (e.layer === 'back' && !e.dead) e.draw(r, alpha, w);
     this.drawTiles(r, camX, camY, 'main');

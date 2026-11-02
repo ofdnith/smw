@@ -4,10 +4,9 @@ import { sfx } from '../../engine/audio/sfx';
 import type { Game, Scene } from '../game';
 import type { SpriteDef } from '../../engine/sprites';
 import { LUMI, LUMI_PALETTE } from '../../content/art/lumi';
-import { ONDINA } from '../../content/art/npcs';
+import { ONDINA, LIGHTHOUSE } from '../../content/art/npcs';
 import { BOSSES } from '../../content/art/bosses';
 import { BOLOTA } from '../../content/art/bolota';
-import { MAP_ICONS } from '../../content/art/mapicons';
 import { drawBackground } from '../render/backgrounds';
 import type { Theme } from '../level/format';
 import { wrap } from '../entities/items';
@@ -21,14 +20,14 @@ const LUMI_RUN: SpriteDef = { palette: LUMI_PALETTE, frames: LUMI.run };
 
 export const CUTSCENES: Record<string, Panel[]> = {
   intro: [
-    { theme: 'praia', night: true, actors: [{ spr: MAP_ICONS.farol, frame: 1, x: 220, y: 70, scale: 2 }, { spr: ONDINA, x: 90, y: 100 }, { spr: LUMI_IDLE, x: 130, y: 100 }], text: 'O ARQUIPELAGO VELA E GUIADO POR SETE FAROIS.', speaker: '' },
-    { theme: 'praia', night: true, actors: [{ spr: MAP_ICONS.farol, frame: 0, x: 220, y: 70, scale: 2 }, { spr: ONDINA, x: 90, y: 100 }, { spr: LUMI_IDLE, x: 130, y: 100 }], text: 'NUMA NOITE SEM LUA, A NEBLINA MARE ENGOLIU AS CHAMAS. OS NAVIOS PARARAM DE CHEGAR.' },
+    { theme: 'praia', night: true, actors: [{ spr: LIGHTHOUSE, frame: 1, x: 230, y: 60 }, { spr: ONDINA, x: 90, y: 100 }, { spr: LUMI_IDLE, x: 130, y: 100 }], text: 'O ARQUIPELAGO VELA E GUIADO POR SETE FAROIS.', speaker: '' },
+    { theme: 'praia', night: true, actors: [{ spr: LIGHTHOUSE, frame: 0, x: 230, y: 60 }, { spr: ONDINA, x: 90, y: 100 }, { spr: LUMI_IDLE, x: 130, y: 100 }], text: 'NUMA NOITE SEM LUA, A NEBLINA MARE ENGOLIU AS CHAMAS. OS NAVIOS PARARAM DE CHEGAR.' },
     { theme: 'praia', night: true, actors: [{ spr: ONDINA, x: 90, y: 100 }, { spr: LUMI_IDLE, x: 130, y: 100 }], text: 'LUMI, MINHA APRENDIZ... ESTAS ESCADAS SAO ALTAS DEMAIS PARA MIM. LEVE A LANTERNA.', speaker: 'ONDINA' },
     { theme: 'praia', night: true, actors: [{ spr: ONDINA, x: 90, y: 100 }, { spr: LUMI_HAPPY, x: 130, y: 100 }], text: 'EU REACENDO TODOS OS SETE, DONA ONDINA. PROMETO!', speaker: 'LUMI' },
     { theme: 'praia', actors: [{ spr: LUMI_RUN, x: 150, y: 110 }], text: 'CORRA, PULE E ENCONTRE OS SEGREDOS DO ARQUIPELAGO. A NEBLINA TEME A LUZ.' },
   ],
   'farol-1': [
-    { theme: 'praia', night: true, actors: [{ spr: MAP_ICONS.farol, frame: 2, x: 200, y: 60, scale: 2 }, { spr: LUMI_HAPPY, x: 110, y: 100 }], text: 'O FAROL DO SINO BRILHA DE NOVO! MAS A NEBLINA SE MOVE PARA O NORTE...' },
+    { theme: 'praia', night: true, actors: [{ spr: LIGHTHOUSE, frame: 1, x: 220, y: 60 }, { spr: LUMI_HAPPY, x: 110, y: 100 }], text: 'O FAROL DO SINO BRILHA DE NOVO! MAS A NEBLINA SE MOVE PARA O NORTE...' },
     { theme: 'praia', night: true, actors: [{ spr: LUMI_IDLE, x: 110, y: 100 }], text: 'UMA CARTA DE ONDINA: "NO BOSQUE VIVE UM BESOURO QUE ROLA COMO BOLA. ELE VAI GOSTAR DE VOCE."', speaker: 'CARTA' },
   ],
   'farol-2': [
@@ -51,7 +50,7 @@ export const CUTSCENES: Record<string, Panel[]> = {
   'farol-7': [
     { theme: 'farol', actors: [{ spr: LUMI_IDLE, x: 120, y: 100 }, { spr: BOSSES.brumoStun, x: 200, y: 96 }], text: 'VOCE... ACENDEU TODOS. OS NAVIOS VAO VOLTAR. E DEPOIS VAO EMBORA DE NOVO.', speaker: 'BRUMO' },
     { theme: 'farol', actors: [{ spr: LUMI_HAPPY, x: 120, y: 100 }, { spr: BOSSES.brumoStun, x: 200, y: 96 }], text: 'E DEPOIS VOLTAM. E PRA ISSO QUE SERVE UM FAROL, CAPITAO. QUER SUBIR AS ESCADAS COMIGO?', speaker: 'LUMI' },
-    { theme: 'praia', actors: [{ spr: MAP_ICONS.farol, frame: 2, x: 200, y: 60, scale: 2 }, { spr: ONDINA, x: 90, y: 100 }, { spr: LUMI_HAPPY, x: 130, y: 100 }, { spr: BOLOTA.normal, x: 160, y: 112 }], text: 'E O ARQUIPELAGO VELA VOLTOU A BRILHAR. FIM... POR ENQUANTO.' },
+    { theme: 'praia', actors: [{ spr: LIGHTHOUSE, frame: 1, x: 220, y: 60 }, { spr: ONDINA, x: 90, y: 100 }, { spr: LUMI_HAPPY, x: 130, y: 100 }, { spr: BOLOTA.normal, x: 160, y: 112 }], text: 'E O ARQUIPELAGO VELA VOLTOU A BRILHAR. FIM... POR ENQUANTO.' },
   ],
 };
 

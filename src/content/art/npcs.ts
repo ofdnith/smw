@@ -53,3 +53,34 @@ export const ONDINA: SpriteDef = {
 ........................
 ........................`],
 };
+
+/** Farol grande (24x64) para as cenas de história. Frame 1: aceso. */
+function lighthouse(lit: boolean): string {
+  const rows: string[] = [];
+  for (let y = 0; y < 64; y++) {
+    let row = '';
+    for (let x = 0; x < 24; x++) {
+      let c = '.';
+      // base alargada
+      const half = y < 10 ? 5 : y < 16 ? 6 : 6 + Math.floor((y - 16) / 8);
+      const cx = 12;
+      if (Math.abs(x - cx + 0.5) <= half) {
+        c = y % 12 < 6 ? 'w' : 'r';
+        if (y < 10) c = 'g';
+        if (Math.abs(x - cx + 0.5) >= half - 0.5) c = 'k';
+      }
+      if (y < 10 && Math.abs(x - cx + 0.5) <= 3) c = lit ? (y % 3 === 0 ? 'Y' : 'y') : 'd';
+      if (y < 2 && Math.abs(x - cx + 0.5) <= 5) c = 'k';
+      if (y === 10 || y === 11) if (Math.abs(x - cx + 0.5) <= 6) c = 'k';
+      if (y >= 60 && Math.abs(x - cx + 0.5) <= 11) c = y === 60 ? 'k' : 'g';
+      row += c;
+    }
+    rows.push(row);
+  }
+  return rows.join('\n');
+}
+
+export const LIGHTHOUSE: SpriteDef = {
+  palette: { '.': null, k: '#1a1a2a', w: '#f4f4f8', r: '#c0392b', g: '#5a5f6e', y: '#ffe08a', Y: '#ffffff', d: '#3a3f4e' },
+  frames: [lighthouse(false), lighthouse(true)],
+};

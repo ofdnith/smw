@@ -5,6 +5,7 @@ import { synth } from '../../engine/audio/synth';
 import { sequencer } from '../../engine/audio/sequencer';
 import type { Game, Scene } from '../game';
 import { drawBackground } from '../render/backgrounds';
+import { glyph, FONT_W } from '../../engine/font';
 import { LUMI, LUMI_PALETTE } from '../../content/art/lumi';
 import { BOLOTA } from '../../content/art/bolota';
 import { MUSIC } from '../../content/music';
@@ -43,10 +44,21 @@ export class TitleScene implements Scene {
     r.drawSprite(BOLOTA.normal, 1 + (Math.floor(this.t / 5) % 3), lx - 34, 134, false, false);
     // logo
     const y = 30 + Math.sin(this.t / 40) * 2;
-    r.box(VIEW_W / 2 - 110, y - 8, 220, 60, 'rgba(10,20,40,0.75)', '#ffd24a');
-    r.text('LUMI', VIEW_W / 2, y, '#ffd24a', 'center', '#7a4a00');
-    r.text('E O ARQUIPELAGO', VIEW_W / 2, y + 14, '#ffffff', 'center', '#000000');
-    r.text('DOS FAROIS', VIEW_W / 2, y + 26, '#ffffff', 'center', '#000000');
+    r.box(VIEW_W / 2 - 110, y - 10, 220, 66, 'rgba(10,20,40,0.75)', '#ffd24a');
+    // "LUMI" em 3x com sombra
+    const word = 'LUMI';
+    const scale = 3;
+    const wordW = (word.length * FONT_W - 1) * scale;
+    let gx = VIEW_W / 2 - wordW / 2;
+    for (const ch of word) {
+      const sh = glyph(ch, '#7a4a00');
+      const gl = glyph(ch, '#ffd24a');
+      if (sh) r.drawFrameScaled(sh, gx + 2, y - 2 + 2, scale, scale);
+      if (gl) r.drawFrameScaled(gl, gx, y - 2, scale, scale);
+      gx += FONT_W * scale;
+    }
+    r.text('E O ARQUIPELAGO', VIEW_W / 2, y + 26, '#ffffff', 'center', '#000000');
+    r.text('DOS FAROIS', VIEW_W / 2, y + 38, '#ffffff', 'center', '#000000');
     // feixe de farol girando
     r.ctx.globalAlpha = 0.15 + 0.1 * Math.sin(this.t / 20);
     r.ctx.fillStyle = '#fff7b0';
@@ -58,7 +70,7 @@ export class TitleScene implements Scene {
     r.ctx.fill();
     r.ctx.globalAlpha = 1;
     if (Math.floor(this.t / 30) % 2 === 0 && this.t > 20) r.text('APERTE UM BOTAO', VIEW_W / 2, VIEW_H - 16, '#ffffff', 'center', '#000000');
-    r.text('V1.0  FEITO DO ZERO EM CODIGO', 4, VIEW_H - 9, 'rgba(0,0,0,0.5)');
+    r.text('V1.0', 4, VIEW_H - 9, 'rgba(0,0,0,0.5)');
   }
 }
 

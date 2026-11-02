@@ -6,6 +6,9 @@ import { WorldMapScene } from './game/scenes/worldmap';
 import { synth } from './engine/audio/synth';
 import { LEVELS } from './content/levels';
 import { PHYS } from './game/entities/player';
+import { sequencer } from './engine/audio/sequencer';
+import { MUSIC } from './content/music';
+import { sfx } from './engine/audio/sfx';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const game = new Game(canvas);
@@ -57,6 +60,7 @@ game.start();
 const w = window as unknown as { __game: Game; __step: (n: number, mask: (frame: number) => number) => void };
 w.__game = game;
 (game as unknown as { levelIds: string[] }).levelIds = Object.keys(LEVELS);
+(window as unknown as { __audio: unknown }).__audio = { synth, sequencer, MUSIC, sfx };
 w.__step = (n, mask) => {
   game.input.override = mask;
   for (let i = 0; i < n; i++) game.update();

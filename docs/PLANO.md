@@ -1,5 +1,7 @@
 # Lumi e o Arquipélago dos Faróis — Plano de Desenvolvimento
 
+> **Estado: v1.0 jogável** em https://ofdnith.github.io/smw/ — M0 a M9 concluídos; ver `docs/diario.md` para decisões e `docs/fisica.md` para os números finais. Diferenças em relação ao plano original: floats determinísticos em vez de ponto fixo; 39 fases (em vez de 68) com todas as sete ilhas, chefes e a Rota das Constelações; trabalho direto na `main`.
+
 > Um platformer 2D original, feito do zero, que parte da *sensação* dos grandes platformers de 16 bits (corrida com impulso, pulo variável, mapa-múndi com caminhos secretos, montaria, segredos em toda parte), mas com personagens, mundo, arte, música e fases 100% inéditos.
 
 Codinome do repositório: `smw` (de *"super mundo"*). Nome do jogo: **Lumi e o Arquipélago dos Faróis**.
