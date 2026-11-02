@@ -33,12 +33,12 @@ export interface Island {
 }
 
 export const ISLANDS: Island[] = [
-  { id: 1, name: 'PRAIA DO SINO', x: 110, y: 225, rx: 80, ry: 38, color: '#f2dca6', edge: '#d9b77a', theme: 'praia' },
-  { id: 2, name: 'BOSQUE ENCHARCADO', x: 95, y: 140, rx: 70, ry: 36, color: '#4f8a3a', edge: '#3a6a2a', theme: 'bosque' },
-  { id: 3, name: 'PENHASCO DOS VENTOS', x: 110, y: 55, rx: 75, ry: 34, color: '#8a8a9a', edge: '#5a5a6a', theme: 'penhasco' },
-  { id: 4, name: 'RECIFE PROFUNDO', x: 255, y: 225, rx: 62, ry: 34, color: '#f49ac1', edge: '#d9a066', theme: 'recife' },
-  { id: 5, name: 'MINAS DE SAL', x: 262, y: 138, rx: 62, ry: 34, color: '#e0dcd0', edge: '#9a968a', theme: 'minas' },
-  { id: 6, name: 'VALE SEM LUA', x: 275, y: 55, rx: 70, ry: 34, color: '#2a3a4a', edge: '#1a2a3a', theme: 'vale' },
+  { id: 1, name: 'PRAIA DO SINO', x: 112, y: 226, rx: 82, ry: 34, color: '#f2dca6', edge: '#d9b77a', theme: 'praia' },
+  { id: 2, name: 'BOSQUE ENCHARCADO', x: 100, y: 142, rx: 68, ry: 32, color: '#4f8a3a', edge: '#3a6a2a', theme: 'bosque' },
+  { id: 3, name: 'PENHASCO DOS VENTOS', x: 112, y: 56, rx: 70, ry: 30, color: '#8a8a9a', edge: '#5a5a6a', theme: 'penhasco' },
+  { id: 4, name: 'RECIFE PROFUNDO', x: 262, y: 228, rx: 52, ry: 30, color: '#f49ac1', edge: '#d9a066', theme: 'recife' },
+  { id: 5, name: 'MINAS DE SAL', x: 262, y: 142, rx: 56, ry: 30, color: '#e0dcd0', edge: '#9a968a', theme: 'minas' },
+  { id: 6, name: 'VALE SEM LUA', x: 278, y: 58, rx: 64, ry: 30, color: '#2a3a4a', edge: '#1a2a3a', theme: 'vale' },
   { id: 7, name: 'FAROL MESTRE', x: 410, y: 150, rx: 55, ry: 70, color: '#5a5f6e', edge: '#3a3f4e', theme: 'farol' },
   { id: 8, name: 'ROTA DAS CONSTELACOES', x: 420, y: 38, rx: 55, ry: 26, color: '#4a3a9a', edge: '#2a2a5a', theme: 'ceu' },
 ];

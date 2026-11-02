@@ -138,7 +138,8 @@ export class Renderer {
     c.fillStyle = color;
     c.beginPath();
     c.rect(0, 0, VIEW_W, VIEW_H);
-    c.arc(Math.round(cx), Math.round(cy), Math.max(0, r), 0, Math.PI * 2, true);
+    c.moveTo(Math.round(cx) + Math.max(0, r), Math.round(cy));
+    c.arc(Math.round(cx), Math.round(cy), Math.max(0, r), 0, Math.PI * 2, false);
     c.fill('evenodd');
     c.restore();
   }
@@ -158,15 +159,19 @@ export class Renderer {
     c.save();
     c.globalAlpha = alpha;
     c.fillStyle = '#02030a';
-    c.beginPath();
-    c.rect(0, 0, VIEW_W, VIEW_H);
-    for (const l of lights) c.arc(Math.round(l.x - this.camX), Math.round(l.y - this.camY), l.r, 0, Math.PI * 2, true);
-    c.fill('evenodd');
+    const ring = (scale: number): void => {
+      c.beginPath();
+      c.rect(0, 0, VIEW_W, VIEW_H);
+      for (const l of lights) {
+        const x = Math.round(l.x - this.camX), y = Math.round(l.y - this.camY), r = l.r * scale;
+        c.moveTo(x + r, y);
+        c.arc(x, y, r, 0, Math.PI * 2, false);
+      }
+      c.fill('evenodd');
+    };
+    ring(1);
     c.globalAlpha = alpha * 0.5;
-    c.beginPath();
-    c.rect(0, 0, VIEW_W, VIEW_H);
-    for (const l of lights) c.arc(Math.round(l.x - this.camX), Math.round(l.y - this.camY), l.r * 1.35, 0, Math.PI * 2, true);
-    c.fill('evenodd');
+    ring(1.35);
     c.restore();
   }
 }

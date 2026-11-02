@@ -247,17 +247,25 @@ export class Player extends Entity {
           const dir = ax !== 0 ? ax : this.facing;
           this.facing = dir;
           b.vx = approach(b.vx, dir * 3.4, 0.25);
-          // sobe degraus de 1 tile
+          // quebra blocos rachados à frente; sobe degraus de 1 tile
           if (b.hitWall !== 0 && b.onGround) {
-            const tx = Math.floor((b.hitWall > 0 ? b.x + b.w + 1 : b.x - 1) / TILE);
-            const ty = Math.floor((b.y + b.h - 1) / TILE);
-            const above = world.get(clamp(tx, 0, world.w - 1), clamp(ty - 1, 0, world.h - 1));
-            const above2 = world.get(clamp(tx, 0, world.w - 1), clamp(ty - 2, 0, world.h - 1));
-            if (above === T.Empty && above2 === T.Empty) {
-              b.y -= TILE;
+            const tx = clamp(Math.floor((b.hitWall > 0 ? b.x + b.w + 1 : b.x - 1) / TILE), 0, world.w - 1);
+            const ty0 = Math.floor(b.y / TILE), ty1 = Math.floor((b.y + b.h - 1) / TILE);
+            let broke = false;
+            for (let ty = Math.max(0, ty0); ty <= Math.min(world.h - 1, ty1); ty++) {
+              const t = world.get(tx, ty);
+              if (t === T.Crack || t === T.ItemAmber || t === T.ItemPower) {
+                world.hitBlock(tx, ty, true, true);
+                broke = true;
+              }
+            }
+            const ty = ty1;
+            const above = world.get(tx, clamp(ty - 1, 0, world.h - 1));
+            const above2 = world.get(tx, clamp(ty - 2, 0, world.h - 1));
+            if (broke) {
               b.vx = dir * 3.0;
-            } else if (world.get(clamp(tx, 0, world.w - 1), ty) === T.Crack) {
-              world.hitBlock(tx, ty, true, true);
+            } else if (above === T.Empty && above2 === T.Empty) {
+              b.y -= TILE;
               b.vx = dir * 3.0;
             } else {
               this.mountRoll = false;
@@ -375,9 +383,12 @@ export class Player extends Entity {
     } else {
       this.gliding = this.power === 'leaf' && !b.onGround && b.vy > 0 && holdJump && !this.mounted && !this.carrying;
       const g = (this.jumping && holdJump && b.vy < 0) ? PHYS.gravHold : PHYS.grav;
-      b.vy += g;
-      const maxFall = this.gliding ? PHYS.glideFall : PHYS.maxFall;
-      if (b.vy > maxFall) b.vy = approach(b.vy, maxFall, this.gliding ? 0.25 : 10);
+      if (this.gliding) {
+        b.vy = approach(b.vy, PHYS.glideFall, b.vy > PHYS.glideFall ? 0.35 : 0.08);
+      } else {
+        b.vy += g;
+        if (b.vy > PHYS.maxFall) b.vy = PHYS.maxFall;
+      }
       if (this.gliding && world.frame % 6 === 0) world.dust(this.cx - this.facing * 5, this.y + 2, 1, '#c8f7c5');
     }
     // corrente de vento
@@ -711,6 +722,12 @@ export class Player extends Entity {
           b.vy = 0;
           this.jumping = false;
         }
+        continue;
+      }
+      if (e.carriable && e.stun > 0 && !e.isEnemy && input.isHeld('run') && !this.carrying && !this.mounted && !this.spinning) {
+        this.carrying = e;
+        e.carried = true;
+        e.onPickup(world);
         continue;
       }
       if (e.isEnemy) {

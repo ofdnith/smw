@@ -38,7 +38,7 @@ export enum T {
 }
 
 export const TILE_CHARS: Record<string, T> = {
-  '.': T.Empty, ' ': T.Empty,
+  '.': T.Empty, ' ': T.Empty, '"': T.Empty,
   '#': T.Solid, '%': T.Rock, '=': T.Platform, B: T.Crack, '?': T.ItemAmber, '!': T.ItemPower, H: T.Hidden,
   '/': T.SlopeUp, '\\': T.SlopeDown, '{': T.GentleUpLo, '}': T.GentleUpHi, '[': T.GentleDownHi, ']': T.GentleDownLo,
   '^': T.Spike, '~': T.Water, W: T.WaterTop, '|': T.Rope, V: T.Net, X: T.Death, '&': T.WindUp, $: T.Amber,

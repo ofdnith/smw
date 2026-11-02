@@ -28,6 +28,8 @@ export interface RoomDef {
   bg?: string;
   /** trava a câmera verticalmente nesta linha (em tiles) */
   lockY?: number;
+  /** inunda tudo que é vazio a partir desta linha (exceto células '"', bolsões de ar) */
+  water?: { y: number; x0?: number; x1?: number };
 }
 
 export interface LevelDef {
@@ -65,7 +67,7 @@ export interface Room {
 export const ENTITY_CHARS: Record<string, string> = {
   s: 'start', c: 'checkpoint', g: 'goal', k: 'key', l: 'lock', p: 'pearl', h: 'feather', e: 'bolota',
   r: 'crab', v: 'gull', u: 'urchin', n: 'slug', f: 'puppet', o: 'octopus', i: 'kite', j: 'jelly', t: 'mole',
-  b: 'bat', w: 'sailor', m: 'platformH', q: 'platformV', z: 'fallPlat', y: 'spring', x: 'cannon', a: 'amberBig',
+  b: 'bat', w: 'sailor', m: 'platformH', q: 'platformV', z: 'fallPlat', y: 'spring', x: 'cannon', a: 'minecart',
   d: 'ghost', '@': 'sign', '9': 'secretGoal', '6': 'swing', 'ç': 'cannonL', '¬': 'sawblade', '°': 'flame', 'ª': 'fish',
 };
 
@@ -113,6 +115,17 @@ export function parseRoom(def: RoomDef, roomIndex: number, theme: Theme): Room {
         continue;
       }
       throw new Error(`caractere desconhecido '${ch}' em (${x},${y}) da sala ${roomIndex}`);
+    }
+  }
+  if (def.water !== undefined) {
+    const wx0 = def.water.x0 ?? 0, wx1 = def.water.x1 ?? w;
+    for (let y = def.water.y; y < h; y++) {
+      const row = rows[y];
+      for (let x = wx0; x < wx1; x++) {
+        const ch = x < row.length ? row[x] : '.';
+        if (ch === '"') continue;
+        if (tiles[y * w + x] === T.Empty) tiles[y * w + x] = y === def.water.y ? T.WaterTop : T.Water;
+      }
     }
   }
   return { def, w, h, tiles, spawns, doors, theme: def.theme ?? theme, overrides };

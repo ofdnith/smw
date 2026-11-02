@@ -94,6 +94,7 @@ export class World implements TileMap {
     this.pearlOrder.sort((a, b) => a.room - b.room || a.x - b.x || a.y - b.y);
     this.checkpoint = checkpoint;
     this.enterRoom(checkpoint ? checkpoint.room : 0, checkpoint ? { x: checkpoint.x, y: checkpoint.y } : null);
+    this.player.power = run.power as Player['power'];
     this.startedFromCheckpoint = !!checkpoint;
   }
 

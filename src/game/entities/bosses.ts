@@ -116,8 +116,9 @@ export class KingCrab extends Boss {
         const sx = this.cx + this.facing * 20;
         if (Math.abs(p.cx - sx) < 20 && p.bottom >= this.bottom - 4 && p.body.onGround) p.hurt(world);
         if (this.hp < this.maxHp) {
-          const c = new Crab(sx + this.facing * 8, this.bottom);
-          c.facing = this.facing;
+          // um caranguejo sai por trás do rei, andando para longe de Lumi
+          const c = new Crab(this.cx - this.facing * 24, this.bottom);
+          c.facing = -this.facing;
           world.add(c);
         }
         this.state = 'stuck';

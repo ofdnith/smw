@@ -227,6 +227,7 @@ export class WorldMapScene implements Scene {
       const unlocked = this.unlocked(e, slot);
       if (!unlocked) continue;
       const a = nodeById(e.a), b = nodeById(e.b);
+      if (!this.nodeReachable(a, slot) || !this.nodeReachable(b, slot)) continue;
       let frac = 1;
       if (e === this.revealEdge) frac = clamp(this.revealT / 60, 0, 1);
       const n = Math.floor(Math.hypot(b.x - a.x, b.y - a.y) / 6);
@@ -303,9 +304,28 @@ export class WorldMapScene implements Scene {
     }
   }
 
+  private reachCache: { key: string; set: Set<string> } | null = null;
+  private reachable(slot: SaveSlot): Set<string> {
+    const key = slot.cleared.join(',') + '|' + slot.secret.join(',');
+    if (this.reachCache && this.reachCache.key === key) return this.reachCache.set;
+    const set = new Set<string>(['i1-start']);
+    const stack = ['i1-start'];
+    while (stack.length) {
+      const id = stack.pop()!;
+      for (const e of EDGES) {
+        if (!this.unlocked(e, slot)) continue;
+        const other = e.a === id ? e.b : e.b === id ? e.a : null;
+        if (other && !set.has(other)) {
+          set.add(other);
+          stack.push(other);
+        }
+      }
+    }
+    this.reachCache = { key, set };
+    return set;
+  }
   private nodeReachable(n: MapNode, slot: SaveSlot): boolean {
-    if (n.id === 'i1-start') return true;
-    return EDGES.some((e) => (e.a === n.id || e.b === n.id) && this.unlocked(e, slot));
+    return this.reachable(slot).has(n.id);
   }
 
   private drawNode(r: Renderer, n: MapNode, slot: SaveSlot): void {

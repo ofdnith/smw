@@ -57,7 +57,7 @@ function l12(): string[] {
 // ---------- 1-3 Gruta da Maré: tem saída secreta (chave + fechadura numa gruta).
 function l13(): string[] {
   const start = dots(flat(14, H, 3), [[3, H - 4, 's'], [8, H - 4, '@']]);
-  const beach = dots(cat(hill(H, 3, 2, 5), flat(8, H, 3)), [[4, H - 6, 'r'], [10, H - 4, 'u'], [5, H - 9, '$'], [6, H - 9, '$']]);
+  const beach = dots(cat(hill(H, 3, 2, 5), flat(8, H, 3)), [[4, H - 6, 'r'], [10, H - 4, 'u'], [5, H - 9, '$'], [6, H - 9, '$'], [12, H - 10, 'p'], [11, H - 9, '='], [12, H - 9, '='], [13, H - 9, '=']]);
   const water = cat(put(flat(2, H, 3), 1, H - 4, '\\'), dots(pool(12, H, 1, 2), [[3, H - 3, 'ª'], [8, H - 3, 'ª'], [5, H - 7, '='], [6, H - 7, '='], [6, H - 8, 'p']]), put(flat(2, H, 3), 0, H - 4, '/'));
   // gruta: entrada por baixo, teto de rocha; chave escondida atrás de blocos rachados
   const cave = (() => {
@@ -70,7 +70,7 @@ function l13(): string[] {
     s = dots(s, [[4, H - 4, 'c'], [10, H - 4, 'u'], [12, H - 4, 'r'], [18, H - 4, 'r'], [7, H - 8, '$'], [15, H - 10, '$'], [23, H - 8, '$'], [20, H - 4, 'B'], [20, H - 5, 'B'], [21, H - 4, 'B'], [21, H - 5, 'B'], [27, H - 4, 'k'], [26, H - 5, 'B'], [27, H - 5, 'B'], [28, H - 5, 'B'], [26, H - 6, 'B'], [27, H - 6, 'B'], [28, H - 6, 'B']]);
     return s;
   })();
-  const outDoor = dots(flat(10, H, 3), [[3, H - 4, 'l'], [7, H - 8, '?']]);
+  const outDoor = dots(flat(10, H, 3), [[3, H - 4, 'l'], [7, H - 8, '7']]);
   const g1 = put(gap(4, H), 1, H - 6, '==');
   const dunes = dots(cat(hill(H, 3, 2, 3), flat(5, H, 3), hill(H, 3, 3, 2)), [[3, H - 6, 'r'], [9, H - 4, 'u'], [15, H - 7, 'v'], [10, H - 9, '!']]);
   const end = dots(flat(18, H, 3), [[3, H - 4, 'r'], [12, H - 4, 'g']]);

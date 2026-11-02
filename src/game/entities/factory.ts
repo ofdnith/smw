@@ -49,7 +49,7 @@ export function createEntity(s: EntitySpawn, world: World): Entity | null {
     case 'cannonL': return new Cannon(x, y, -1);
     case 'swing': return new Swing(x, y);
     case 'sawblade': return new Sawblade(x, y);
-    case 'amberBig': return new Minecart(x, y);
+    case 'minecart': return new Minecart(x, y);
     case 'boss': return world.level.boss ? createBoss(world.level.boss, x, y) : null;
     default:
       if (s.kind.startsWith('door')) return new Door(x, y, s.kind);

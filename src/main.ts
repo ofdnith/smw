@@ -42,6 +42,11 @@ if (lv && LEVELS[lv]) {
   if (params.get('debug')) game.debug = true;
   game.push(new LevelScene(LEVELS[lv], game));
 } else if (params.has('map')) {
+  if (!game.slot.flags.includes('intro')) game.slot.flags.push('intro');
+  // ?cleared=1-1,1-2 marca fases como concluídas (dev)
+  for (const id of (params.get('cleared') ?? '').split(',').filter(Boolean)) if (!game.slot.cleared.includes(id)) game.slot.cleared.push(id);
+  for (const id of (params.get('secret') ?? '').split(',').filter(Boolean)) if (!game.slot.secret.includes(id)) game.slot.secret.push(id);
+  if (params.get('node')) game.slot.node = params.get('node')!;
   game.push(new WorldMapScene(game, null));
 } else {
   game.push(new TitleScene());
