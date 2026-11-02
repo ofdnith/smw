@@ -319,26 +319,37 @@ export class TideMedusa extends Boss {
   baseY: number;
   constructor(x: number, y: number) {
     super(x, y, 26, 26);
-    this.baseY = this.body.y - 40;
+    this.baseY = this.body.y - 58;
     this.body.y = this.baseY;
     this.body.noclip = true;
     this.gravity = 0;
   }
   get lit(): boolean {
-    const c = 220 - (this.maxHp - this.hp) * 30;
-    return this.t % c < c * 0.55;
+    const c = 240 - (this.maxHp - this.hp) * 30;
+    return this.t % c < c * 0.5;
+  }
+  /** acabou de acender: aviso sem dano */
+  get warming(): boolean {
+    const c = 240 - (this.maxHp - this.hp) * 30;
+    return this.t % c < 24;
+  }
+  /** frames até a próxima troca de fase */
+  get phaseLeft(): number {
+    const c = 240 - (this.maxHp - this.hp) * 30;
+    const k = this.t % c;
+    return k < c * 0.5 ? c * 0.5 - k : c - k;
   }
   think(world: World): void {
     const p = world.player;
     const b = this.body;
     this.t++;
-    this.hurts = this.lit;
+    this.hurts = this.lit && !this.warming;
     this.stompable = !this.lit;
     this.spikyTop = this.lit;
-    b.x = approach(b.x, p.cx - b.w / 2, 0.5);
-    b.y = this.baseY + tsin(this.t / 200) * 30;
-    if (this.lit && this.t % 60 === 0) {
-      for (let i = 0; i < 3; i++) world.add(new Ink(this.cx, this.bottom, (i - 1) * 1.2, 1.5));
+    b.x = approach(b.x, p.cx - b.w / 2, this.lit ? 0.35 : 0.2);
+    b.y = this.baseY + tsin(this.t / 200) * 18;
+    if (this.lit && !this.warming && this.t % 90 === 0) {
+      world.add(new Ink(this.cx, this.bottom, 0, 1.0));
       sfx('ink');
     }
   }
@@ -351,7 +362,7 @@ export class TideMedusa extends Boss {
     if (!this.lit) this.damage(world);
   }
   override onTouch(): boolean {
-    return this.lit;
+    return this.lit && !this.warming;
   }
   protected spriteName(): string {
     return this.lit ? 'medusaLit' : 'medusa';
@@ -393,9 +404,9 @@ export class OldDrill extends Boss {
         // emerge no chão onde Lumi está
         const gy = this.findGround(world, this.cx, p.bottom - 8);
         b.y = gy - b.h;
-        b.vy = -4;
+        b.vy = -1.5;
         this.isEnemy = true;
-        this.spikyTop = true;
+        this.spikyTop = false;
         this.state = 'dash';
         this.t = 0;
         this.facing = sign(p.cx - this.cx) || 1;
@@ -432,7 +443,7 @@ export class OldDrill extends Boss {
     return Math.floor(y / TILE) * TILE;
   }
   override onStomp(world: World): boolean {
-    if (this.state !== 'dizzy') return false;
+    if (this.state !== 'dizzy') return this.state === 'dash'; // na máquina em movimento, só quica
     this.damage(world);
     this.state = 'hidden';
     this.t = 0;
@@ -479,40 +490,47 @@ export class Stalactite extends Entity {
   }
 }
 
-/** 6. Sombra de Lumi: repete os movimentos de Lumi com 1 s de atraso. */
+/** 6. Sombra de Lumi: segue os passos de Lumi com 1 s de atraso, andando pelo chão e repetindo os pulos. */
 export class ShadowLumi extends Boss {
   readonly kind = 'boss-sombra';
   readonly bossName = 'SOMBRA';
-  history: { x: number; y: number; f: number; pose: string }[] = [];
+  history: { x: number; jumped: boolean }[] = [];
   delay = 60;
   cool = 0;
   constructor(x: number, y: number) {
     super(x, y, 10, 20);
-    this.body.noclip = true;
-    this.gravity = 0;
     this.hp = 3;
     this.maxHp = 3;
     this.intro = 60;
+    this.gravity = 0.5;
   }
   think(world: World): void {
     const p = world.player;
-    this.history.push({ x: p.x, y: p.y, f: p.facing, pose: p.pose });
+    this.history.push({ x: p.x, jumped: p.jumping && p.body.vy < -3 });
     const d = this.delay - (this.maxHp - this.hp) * 12;
+    const b = this.body;
     if (this.history.length > d) {
       const h = this.history.shift()!;
-      this.body.x = h.x;
-      this.body.y = h.y;
-      this.facing = h.f;
-    }
+      const dx = h.x - b.x;
+      b.vx = approach(b.vx, clamp(dx * 0.2, -1.8, 1.8), 0.25);
+      // repete o pulo só quando longe de Lumi: perto, fica no chão e pode ser pisada
+      if (h.jumped && b.onGround && Math.abs(p.cx - this.cx) > 60) {
+        b.vy = -5;
+        sfx('jump');
+      }
+      if (Math.abs(b.vx) > 0.1) this.facing = sign(b.vx);
+    } else b.vx = 0;
+    b.vy = Math.min(4.5, b.vy + this.gravity);
+    moveBody(b, world);
     if (this.cool > 0) this.cool--;
     this.hurts = this.cool === 0;
     this.isEnemy = this.cool === 0;
-    // Lumi vê a sombra só perto da luz: o mundo é escuro; a própria sombra brilha fraco
-    world.darkLights.push({ x: this.cx, y: this.cy, r: 20 });
+    world.darkLights.push({ x: this.cx, y: this.cy, r: 24 });
   }
   override onStomp(world: World): boolean {
     this.damage(world);
-    this.cool = 60;
+    this.cool = 70;
+    this.body.vx = 0;
     return true;
   }
   override onHit(world: World, source: Entity | null): void {

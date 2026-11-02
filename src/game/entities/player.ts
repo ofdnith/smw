@@ -36,7 +36,7 @@ export const PHYS = {
   dashDrainFrames: 4,
   swimGrav: 0.09,
   swimKick: -2.1,
-  swimMax: 1.3,
+  swimMax: 1.45,
   climbSpeed: 1.1,
   iceFactor: 0.35,
 };
@@ -611,7 +611,7 @@ export class Player extends Entity {
     }
     this.swimT++;
     const ax = inp.axisX;
-    b.vx = approach(b.vx, ax * PHYS.swimMax, 0.05);
+    b.vx = approach(b.vx, ax * PHYS.swimMax, 0.12);
     if (ax !== 0) this.facing = ax;
     b.vy += PHYS.swimGrav;
     if (inp.isPressed('jump')) {
@@ -745,8 +745,11 @@ export class Player extends Entity {
 
   private enemyContact(world: World, e: Entity): void {
     const b = this.body;
+    // chefe recém-atingido não revida na hora
+    if (e.kind.startsWith('boss') && e.flash > 0) return;
     const falling = b.vy > 0 || (this.prevBottom <= e.body.y + 4);
-    const stomp = falling && this.prevBottom <= e.body.y + e.body.h * 0.5 + 2 && !b.inWater;
+    // na água, só conta como pisão um mergulho claro por cima
+    const stomp = falling && this.prevBottom <= e.body.y + (b.inWater ? 4 : e.body.h * 0.5 + 2) && (!b.inWater || b.vy > 0.3);
     const spin = this.spinning || this.mountRoll;
     if (this.mountRoll && e.isEnemy) {
       e.onHit(world, this);

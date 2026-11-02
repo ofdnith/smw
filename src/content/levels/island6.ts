@@ -131,7 +131,7 @@ export const ISLAND6: LevelDef[] = [
   {
     id: '6-5', name: 'FAROL APAGADO', island: 6, theme: 'vale', music: 'vale', kind: 'farol', boss: 'sombra',
     rooms: [{ map: l65()[0], dark: true }, { map: l65()[1], theme: 'forte', music: 'chefe', lockY: 0, dark: true }],
-    hint: 'A SOMBRA REPETE O QUE VOCE FEZ UM SEGUNDO ATRAS. PULE... E ESPERE.',
+    hint: 'A SOMBRA SEGUE SEUS PASSOS COM UM SEGUNDO DE ATRASO. DEIXE-A CHEGAR E PISE NELA.',
   },
 ];
 
