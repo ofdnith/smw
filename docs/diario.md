@@ -89,3 +89,29 @@ Pedido: "o jogo está feio" — melhorar todos os sprites, as ilhas e as colisõ
 - Replays regerados: o bot agora termina 23 fases (antes 19), inclusive o Barão Cata-Vento.
 
 **Números**: 239 testes de unidade, 5 e2e, 23 replays.
+
+## 2026-11-02 — v1.3: console virtual de 16 bits (F0–F2 do plano de fidelidade)
+Pedido: deixar o jogo "muito próximo aos games de Super Nintendo" em todas as vertentes. Montei o plano (`docs/PLANO-16BIT.md`) e executei as três primeiras fases, que são a base de todo o resto.
+
+**Som (F2)**: o sintetizador de ondas de 8 bits virou um chip de samples.
+- `adpcm.ts`: codec de 4 bits nosso (bloco de 16 samples em 9 bytes, 4 preditores com coeficientes próprios); 49 dB de SNR num seno.
+- `instruments.ts`: 30 instrumentos por síntese offline a 32 kHz (aditiva com loop perfeito, parciais inarmônicas, ruído com PRNG fixo): flauta, ocarina, metais, acordeão, cordas, coro, órgão, harpa, violão, pizzicato, baixo, slap, marimba, steel drum, sino, celesta, piano elétrico e um kit de bateria com 11 peças. 285 KB comprimidos; gerados aos poucos depois do primeiro gesto.
+- Eco com realimentação filtrada, pan e envio por canal; os efeitos sonoros "roubam" as vozes 7 e 8 enquanto tocam.
+- Cada música foi orquestrada por ilha (steel drum na praia, acordeão no navio, órgão nos fortes, coro no vale) com dobra de melodia onde cabia. Mixagem refeita com `tools/render-music.mjs` (render offline no Chromium; alvo −20 dB RMS).
+- Não consigo ouvir daqui: o portão da F2 é a audição do dono do projeto.
+
+**Vídeo (F1)**
+- Quadro 256×224. 55 das 70 salas já tinham 14 tiles de altura e agora aparecem inteiras; chefes que usavam `camX + 320` passaram a usar `VIEW_W`.
+- Todas as cores passam por RGB555 (`console.ts`); sprites são encaixados em 15 cores por sub-paleta.
+- Céus por linha de varredura (HDMA) em vez de faixas; água ondula linha a linha; fades viraram mosaico + brilho em 16 degraus.
+- Fonte em negrito com sombra (glifos 5×7 engrossados para 6×7).
+- Todas as telas de interface reorganizadas para o quadro novo (seleção de arquivo, opções, extras, galeria, sala de som, pausa, créditos, cutscene, título). `?ui=<tela>` abre cada uma direto.
+- Corrigido: o nome da fase cobria a placa de tutorial no começo das fases.
+
+**Ferramentas (F0)**: `tools/capture.mjs` (capturas em resolução nativa, `--ui` para as telas), `tools/fiscal.ts` + `tests/unit/hardware.test.ts` (cores por sprite, memória de som, vozes), `tools/render-music.mjs` (WAV e volume).
+
+**Replays**: a câmera mais estreita muda quando inimigos acordam, então todos foram regerados; o bot terminou 24 fases (antes 23).
+
+**Números**: 300 testes de unidade, 5 e2e, 24 replays; render ≤ 3,5 ms/quadro no pior caso medido (fase submersa).
+
+**Próximo**: F3, a Ilha 1 inteira em 16 bits (Lumi com ~60 quadros desenhados à mão, tileset e fundos repintados para 256×224, fases refeitas, mini-chefe no forte). Precisa do playtest humano para fechar.
