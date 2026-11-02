@@ -10,12 +10,13 @@ Leia `docs/PLANO.md` antes de qualquer tarefa. Ele é a fonte de verdade de desi
 
 ## Técnico
 - TypeScript strict, zero `any`, zero dependências de runtime. Vite, Vitest, Playwright.
-- Gameplay determinístico: física em ponto fixo (1/256 px), PRNG com seed, nada de `Math.random`/`Date` em `src/game`.
+- Gameplay determinístico: floats com operações determinísticas e seno por tabela (`tsin`), PRNG com seed, nada de `Math.random`/`Date` dentro do mundo (`src/game/world.ts` e entidades). Replays em `tests/replays` provam isso; se mudar a física de propósito, regere com `npm run replays -- <fase>`.
 - Timestep fixo de 60 Hz; render interpolado.
 - Resolução lógica 320×180, escala inteira, `image-rendering: pixelated`.
 
 ## Fluxo
-- Branch por marco (`mN-nome`), PR para `main`. `main` sempre jogável.
+- `main` sempre jogável; CI roda lint, typecheck, testes, build e e2e a cada push, e o Pages publica a `main`.
+- Fases novas: escreva com a DSL de `src/content/levels/dsl.ts` (ou rascunhe no editor, `?editor`) e rode o validador de alcance (`tests/unit/reach.test.ts`). Ids de fase nunca mudam (saves dependem deles); o número exibido no mapa é `label`.
 - Commits pequenos, em português.
-- Antes de dizer que algo está pronto: `npm run check` (lint + typecheck + unit + replays), build, abrir no Chromium headless e conferir screenshot.
+- Antes de dizer que algo está pronto: `npm run check`, `npm run build`, `npm run e2e`, e conferir screenshot (`tools/sheet.mjs`, `tools/shot.mjs`).
 - Toda sessão termina com uma entrada em `docs/diario.md`.

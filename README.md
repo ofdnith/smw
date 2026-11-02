@@ -17,28 +17,39 @@ O Arquipélago Vela é guiado por sete faróis. Numa noite sem lua, a Neblina Ma
 | Item reservado | V / I | Select |
 | Pausa / confirmar | Enter / Esc | Start |
 | Painel de depuração | F1 (F2–F7 ajustam física) | |
+| Gravar replay da fase | F8 | |
 
-Em celulares, os controles de toque aparecem automaticamente (também podem ser ligados na pausa).
+Pulo, correr, cambalhota, item e pausa podem ser trocados em **Opções** (na seleção de arquivo ou na pausa), tanto no teclado quanto no controle. Em celulares, os controles de toque aparecem automaticamente.
 
 ## O jogo
-- **7 ilhas + Rota das Constelações**: Praia do Sino, Bosque Encharcado, Penhasco dos Ventos, Recife Profundo, Minas de Sal, Vale Sem Lua, Farol Mestre — 39 fases, 7 chefes, 2 fases secretas e 4 desafios.
+- **7 ilhas + Rota das Constelações**: Praia do Sino, Bosque Encharcado, Penhasco dos Ventos, Recife Profundo, Minas de Sal, Vale Sem Lua, Farol Mestre — **59 fases**: 36 normais, 2 secretas, 6 fortes, 7 faróis com chefe (o último é o confronto final) e 8 desafios.
 - **Poderes**: Concha-Escudo, Folha de Vento (planar, rajada e voo com ímpeto), Lanterna Viva (orbes de luz revelam blocos invisíveis).
 - **Bolota**, o besouro montaria: pulo duplo, rolagem que quebra blocos, variantes Pedra e Seda.
-- **Pérolas da Maré**: 3 por fase, escondidas. **Saídas secretas** abrem caminhos novos no mapa e a Rota das Constelações.
-- Trilha sonora com 16 temas e ~45 efeitos gerados por um sintetizador próprio (Web Audio).
-- Save em 3 arquivos, modo assistido, controles de toque e gamepad.
+- **Pérolas da Maré**: 3 por fase, escondidas. **Nove saídas secretas** abrem caminhos novos no mapa e a Rota das Constelações.
+- **Tenda da Ondina** (escolha uma concha) e **Cassino de Conchas** (jogo da memória por 10 âmbar) no mapa.
+- **Extras**, desbloqueados pelas pérolas: **Galeria** (10), **Sala de Som** (25), **Contra-relógio** (40, com recordes) e o **Editor de Fases** (sempre aberto).
+- Trilha sonora com 19 temas originais, mixados no mesmo volume, e ~45 efeitos gerados por um sintetizador próprio (Web Audio).
+- Save em 3 arquivos, modo assistido, controles de toque, gamepad e remapeamento.
+
+## Editor de fases
+Abra **Extras → Editor de Fases** (ou `?editor`, ou `?editor=2-1` para partir de uma fase existente).
+Botão esquerdo pinta, direito apaga, roda rola. `Q`/`E` trocam a peça, `TAB` a categoria, `M` o tema, `[ ]` e `- =` mudam o tamanho, `G` a grade.
+`T` testa do início, `Y` testa a partir do cursor, `P` exporta (baixa um JSON e copia as linhas no formato das fases), `ESC` volta. O rascunho fica salvo no navegador.
 
 ## Desenvolvimento
 ```
 npm install
 npm run dev        # http://localhost:5173
-npm run check      # lint + typecheck + testes unitários (física, mecânicas, chefes, alcançabilidade das 39 fases, música)
-npm run e2e        # fluxo completo no Chromium headless
+npm run check      # lint + typecheck + 223 testes: física, mecânicas, chefes, alcançabilidade das 59 fases, replays, música, extras
+npm run e2e        # fluxo completo no Chromium headless, incluindo replays com o mesmo hash do Node
 npm run build      # dist/ (publicado automaticamente no GitHub Pages)
+npm run replays    # regera os replays de regressão (tests/replays) com o bot
 ```
-Ferramentas: `node tools/bot.mjs 1-1` (bot joga uma fase), `node tools/sheet.mjs 2-1 out.png` (folha de contato), `node tools/shot.mjs "level=3-2" 60 out.png` (captura).
+Ferramentas: `node tools/bot.mjs 1-1` (bot joga uma fase no navegador), `node tools/sheet.mjs 2-1 out.png` (folha de contato), `node tools/shot.mjs "level=3-2" 60 out.png` (captura), `node tools/loudness.mjs` (volume de cada música).
 
-Atalhos de URL para testar: `?level=4-2` abre uma fase; `?map&cleared=1-1,1-2` abre o mapa com fases concluídas.
+**Replays:** cada arquivo em `tests/replays` guarda só a entrada quadro a quadro de uma partida. Se a física, a colisão ou uma fase mudarem, o hash do estado final muda e o teste aponta. Mudança intencional? `npm run replays -- <fase>`.
+
+Atalhos de URL para testar: `?level=4-2` abre uma fase; `?ta=4-2` abre o contra-relógio dela; `?map&cleared=1-1,1-2` abre o mapa com fases concluídas; `?editor` abre o editor; `?art=0` mostra toda a arte.
 
 ## App para Mac (opcional)
 O workflow **App para macOS (Tauri)** (`.github/workflows/mac.yml`) compila um `.app`/`.dmg` nativo num runner macOS do GitHub Actions — rode-o pela aba *Actions* (botão *Run workflow*) ou crie uma tag `v*` — nesse caso o `.dmg` é anexado automaticamente a uma release em https://github.com/ofdnith/smw/releases. O ícone é gerado na hora a partir do sprite da Lumi (`tools/icon.mjs`). Requer Rust no runner (já incluído no workflow).

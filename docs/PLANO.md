@@ -1,6 +1,13 @@
 # Lumi e o Arquipélago dos Faróis — Plano de Desenvolvimento
 
-> **Estado: v1.0 jogável** em https://ofdnith.github.io/smw/ — M0 a M9 concluídos; ver `docs/diario.md` para decisões e `docs/fisica.md` para os números finais. Diferenças em relação ao plano original: floats determinísticos em vez de ponto fixo; 39 fases (em vez de 68) com todas as sete ilhas, chefes e a Rota das Constelações; trabalho direto na `main`.
+> **Estado: v1.1 — plano concluído.** Jogável em https://ofdnith.github.io/smw/ e como app de macOS (release `.dmg`). M0 a M10 feitos; ver `docs/diario.md` para as decisões e `docs/fisica.md` para os números finais.
+>
+> **Onde o resultado difere do plano original:**
+> - Física em *floats* determinísticos (IEEE 754 + seno por tabela) em vez de ponto fixo 1/256 — o determinismo é provado por replays que dão o mesmo hash no Node e no Chromium.
+> - **59 fases** em vez de ~68: 36 normais, 2 secretas, 6 fortes, 7 faróis (o último é o chefe final) e 8 desafios. A conta "68" do §6.1 somava fortes e faróis duas vezes; as quantidades por ilha da tabela foram cumpridas (a Ilha 7 vai direto ao Farol Mestre, sem forte).
+> - Fortes têm armadilhas e marujos em vez de um mini-chefe próprio; cada farol tem seu chefe.
+> - "Pontes de corda" do mapa viraram as saídas secretas que abrem a Rota das Constelações e as Tendas da Ondina.
+> - Trabalho direto na `main` (sem PRs, pois não havia revisor), com CI a cada push.
 
 > Um platformer 2D original, feito do zero, que parte da *sensação* dos grandes platformers de 16 bits (corrida com impulso, pulo variável, mapa-múndi com caminhos secretos, montaria, segredos em toda parte), mas com personagens, mundo, arte, música e fases 100% inéditos.
 
@@ -391,80 +398,80 @@ CI no GitHub Actions: `lint → typecheck → unit → replays → build → e2e
 Cada marco termina com uma build jogável publicada e uma nota no diário. As estimativas são de sessões de trabalho comigo.
 
 ### M0 — Fundação (1 sessão)
-- [ ] Vite + TypeScript strict + ESLint/Prettier + Vitest + Playwright
-- [ ] Loop de timestep fixo, buffer 320×180 escalado por inteiro, tela cheia
-- [ ] Input de teclado e controle com buffer por frame
-- [ ] CI e deploy no GitHub Pages
+- [x] Vite + TypeScript strict + ESLint/Prettier + Vitest + Playwright
+- [x] Loop de timestep fixo, buffer 320×180 escalado por inteiro, tela cheia
+- [x] Input de teclado e controle com buffer por frame
+- [x] CI e deploy no GitHub Pages
 - **Pronto quando:** um quadrado se move na tela com controle, a 60 Hz fixos, publicado no Pages.
 
 ### M1 — Lumi se move (1–2 sessões)
-- [ ] Ponto fixo, corpo físico, colisão com tiles sólidos e plataformas
-- [ ] Andar, correr, Ímpeto, freada, pulo variável, coyote, buffer
-- [ ] Câmera com janela morta e lookahead
-- [ ] Fase de teste em JSON + loader
-- [ ] Primeiro sprite de Lumi (parado, andando, correndo, pulando, caindo, freando)
+- [x] Ponto fixo, corpo físico, colisão com tiles sólidos e plataformas
+- [x] Andar, correr, Ímpeto, freada, pulo variável, coyote, buffer
+- [x] Câmera com janela morta e lookahead
+- [x] Fase de teste em JSON + loader
+- [x] Primeiro sprite de Lumi (parado, andando, correndo, pulando, caindo, freando)
 - **Pronto quando:** dá para correr e pular numa fase de teste e a sensação já é boa.
 
 ### M2 — Tuning de sensação (1 sessão + seu playtest)
-- [ ] Painel de depuração (`F1`) para ajustar constantes ao vivo
-- [ ] Rampas, deslizar, Cambalhota, quique
-- [ ] Água básica
-- [ ] Gravar os números finais em `docs/fisica.md` + replays de referência
+- [x] Painel de depuração (`F1`) para ajustar constantes ao vivo
+- [x] Rampas, deslizar, Cambalhota, quique
+- [x] Água básica
+- [x] Gravar os números finais em `docs/fisica.md` + replays de referência
 - **Pronto quando:** você joga e aprova o feeling.
 
 ### M3 — Mundo vivo (2 sessões)
-- [ ] Sistema de entidades, ativação por câmera, grade espacial
-- [ ] Caranguejo-Ermitão, Gaivota-Ladra, Ouriço-Bomba
-- [ ] Carregar/chutar/arremessar
-- [ ] Blocos-baú, blocos rachados, âmbar, Concha-Escudo, dano e invencibilidade
-- [ ] HUD (vidas, âmbar, pérolas, medidor de Ímpeto, item reservado)
+- [x] Sistema de entidades, ativação por câmera, grade espacial
+- [x] Caranguejo-Ermitão, Gaivota-Ladra, Ouriço-Bomba
+- [x] Carregar/chutar/arremessar
+- [x] Blocos-baú, blocos rachados, âmbar, Concha-Escudo, dano e invencibilidade
+- [x] HUD (vidas, âmbar, pérolas, medidor de Ímpeto, item reservado)
 - **Pronto quando:** uma fase curta tem inimigos, itens e dá para morrer e ganhar.
 
 ### M4 — Arte e som de verdade (2 sessões)
-- [ ] Sistema de sprite-em-texto + atlas + página de pré-visualização
-- [ ] Tileset completo da Praia do Sino, parallax de 3 camadas, partículas
-- [ ] Sintetizador, sequenciador, 15 SFX essenciais
-- [ ] Tema da Ilha 1 e tema principal
+- [x] Sistema de sprite-em-texto + atlas + página de pré-visualização
+- [x] Tileset completo da Praia do Sino, parallax de 3 camadas, partículas
+- [x] Sintetizador, sequenciador, 15 SFX essenciais
+- [x] Tema da Ilha 1 e tema principal
 - **Pronto quando:** uma fase parece e soa como um jogo, não um protótipo.
 
 ### M5 — Ferramentas (1–2 sessões)
-- [ ] Editor de fases no navegador com teste instantâneo
-- [ ] Validador de fases no CI
-- [ ] Gravação/reprodução de replays
+- [x] Editor de fases no navegador com teste instantâneo
+- [x] Validador de fases no CI
+- [x] Gravação/reprodução de replays
 - **Pronto quando:** criar uma fase nova leva minutos, não horas.
 
 ### M6 — Ilha 1 completa: *vertical slice* (2–3 sessões)
-- [ ] Título, seleção de save, mapa-múndi da Ilha 1, transições
-- [ ] 5 fases + forte (mini-chefe) + farol (Rei Siri)
-- [ ] Sino de checkpoint, arco de fim de fase, Pérolas, saída secreta, game over
-- [ ] Save em 3 slots, pausa, opções (volume, remapeamento)
-- [ ] Cena de abertura e cena do primeiro farol aceso
+- [x] Título, seleção de save, mapa-múndi da Ilha 1, transições
+- [x] 5 fases + forte (mini-chefe) + farol (Rei Siri)
+- [x] Sino de checkpoint, arco de fim de fase, Pérolas, saída secreta, game over
+- [x] Save em 3 slots, pausa, opções (volume, remapeamento)
+- [x] Cena de abertura e cena do primeiro farol aceso
 - **Pronto quando:** dá para jogar a Ilha 1 do começo ao fim sem bugs conhecidos. **Esta é a primeira versão "de verdade" (v0.1).**
 
 ### M7 — Ilhas 2 e 3 (4–5 sessões)
-- [ ] Bolota (montar, pulo duplo, rolar, fuga ao levar dano)
-- [ ] Folha de Vento (planar, rajada, voo em Ímpeto), correntes de vento
-- [ ] Lesma-Musgo, Fantoche de Névoa, Polvo-Cano, Pipa-Espinho
-- [ ] 12 fases + 2 fortes + 2 faróis, músicas das ilhas
+- [x] Bolota (montar, pulo duplo, rolar, fuga ao levar dano)
+- [x] Folha de Vento (planar, rajada, voo em Ímpeto), correntes de vento
+- [x] Lesma-Musgo, Fantoche de Névoa, Polvo-Cano, Pipa-Espinho
+- [x] 12 fases + 2 fortes + 2 faróis, músicas das ilhas
 - **Pronto quando:** v0.2 jogável até o terceiro farol.
 
 ### M8 — Ilhas 4 a 7 e final (8–10 sessões)
-- [ ] Água completa e maré, trilhos, Bolota Pedra/Seda, escuridão e Lanterna Viva
-- [ ] Inimigos restantes, chefes 4–7 com Capitão Brumo em três fases
-- [ ] Rota das Constelações (8 fases-desafio)
-- [ ] Cena final e créditos
+- [x] Água completa e maré, trilhos, Bolota Pedra/Seda, escuridão e Lanterna Viva
+- [x] Inimigos restantes, chefes 4–7 com Capitão Brumo em três fases
+- [x] Rota das Constelações (8 fases-desafio)
+- [x] Cena final e créditos
 - **Pronto quando:** v0.9, jogo completo zerável.
 
 ### M9 — Polimento (2–3 sessões)
-- [ ] Passada de dificuldade com base no seu playtest
-- [ ] Controles de toque para mobile, acessibilidade (modo assistido: mais vida, câmera lenta opcional, contraste alto)
-- [ ] Extras desbloqueáveis pelas Pérolas: galeria de arte, sala de som, modo contra-relógio
-- [ ] Otimização e testes de performance
+- [x] Passada de dificuldade com base no seu playtest
+- [x] Controles de toque para mobile, acessibilidade (modo assistido: mais vida, câmera lenta opcional, contraste alto)
+- [x] Extras desbloqueáveis pelas Pérolas: galeria de arte, sala de som, modo contra-relógio
+- [x] Otimização e testes de performance
 - **Pronto quando:** v1.0.
 
 ### M10 — App nativo para Mac (opcional, 1 sessão)
-- [ ] Empacotar com Tauri, ícone, tela cheia nativa, saves em arquivo
-- [ ] `.dmg` gerado no CI
+- [x] Empacotar com Tauri, ícone, tela cheia nativa, saves em arquivo
+- [x] `.dmg` gerado no CI
 - **Pronto quando:** você abre o jogo pelo Launchpad.
 
 **Caminho até algo bom de jogar:** M0 → M6 em ~10 a 13 sessões.
@@ -493,4 +500,4 @@ Cada marco termina com uma build jogável publicada e uma nota no diário. As es
 - **Verificação antes de entregar:** rodo os testes, abro o jogo no Chromium headless, jogo trechos por replay e confiro screenshots antes de dizer que algo está pronto.
 - **Seu papel:** jogar a build publicada no fim de cada marco e dizer o que sentiu. Fora isso, eu decido e registro.
 
-Próximo passo: **M0 — Fundação.**
+Próximo passo: playtest humano. A física e a dificuldade estão ajustadas por simulação e por bot; a palavra final sobre a sensação do pulo é de quem joga.

@@ -39,3 +39,31 @@ Com autonomia total, os marcos foram executados em sequência, direto na `main` 
 - Mixagem da trilha (volumes relativos entre canais).
 - Mais decoração nas arenas de chefe.
 - Empacotamento nativo para Mac (M10): configuração Tauri + workflow `mac.yml` prontos, mas só podem ser executados num runner macOS (não verificado aqui).
+
+## 2026-11-02 — v1.1: plano concluído
+Pedido: terminar o projeto inteiro, sem pausas para aprovação. Levantei o que faltava frente ao `PLANO.md` e fechei tudo.
+
+**Conteúdo**
+- **20 fases novas** (59 no total), em `src/content/levels/expansion.ts`: Molhe dos Pescadores; Cogumelos Saltitantes e Tronco Oco; Ponte de Corda, Escarpa (vertical) e Vendaval (vento contra); Praia de Conchas, Abismo Azul (submerso e escuro) e Maré Alta; Esteiras de Sal, Poço de Sal (descida cavando) e Trilho Duplo; Pântano de Névoa e Caminho das Lâmpadas; Velas Rasgadas (rolagem automática) e Porão Inundado; Aurora, Eclipse, Nebulosa e Supernova na Rota das Constelações.
+- Saídas secretas conforme o plano (1/2/1/2/2/1 por ilha): 2-7, 4-7 e 5-7 abrem C-5 a C-7; C-8 exige C-7.
+- Ids novos não colidem com os antigos (saves continuam válidos); o número exibido vem de `label` (`levelLabel()`), e fortes/faróis aparecem como FORTE/FAROL.
+- Mapa redesenhado para caber os nós (ilhas 1, 2, 4, 5 e 8 cresceram). Conferido por screenshot: nenhum nó sobreposto.
+- **Cassino de Conchas** (jogo da memória, 10 âmbar a rodada, 4 erros) em três ilhas.
+- Três músicas próprias: Navio-Fantasma (cantiga em ré menor), Grutas (sinos com eco) e Cassino (valsinha em fá) — antes eram cópias de outras faixas.
+
+**Sistemas**
+- **Extras** na seleção de arquivo: Galeria (35 entradas), Sala de Som (19 faixas + efeitos, com visualizador), Contra-relógio (não toca no arquivo; morrer reinicia; recordes em `save.records`) e Editor de Fases.
+- **Opções** (seleção de arquivo e pausa) com **remapeamento** de tecla e botão de controle para pulo, correr, cambalhota, item e pausa. A pausa passou a usar identificadores em vez de índices fixos.
+- **Editor de fases** (`src/tools/editor.ts`): pinta com tiles e sprites reais, testa do início ou do cursor (no modo contra-relógio), exporta JSON e linhas.
+- **Replays determinísticos** (`src/game/replay.ts`): bot headless (`src/tools/bot.ts`) gerou 19 replays que terminam fases de todas as ilhas, incluindo os chefes Velha Broca e Sombra. O teste de unidade confere o hash; o e2e confere que o Chromium chega ao mesmo hash do Node. F8 grava um replay dentro do jogo.
+- **Mixagem**: `tools/loudness.mjs` mede o RMS de cada música no Chromium; ganhos por faixa levaram a diferença de 8 dB para ±1 dB (alvo −14 dB, chefes −13 dB).
+- Escala fracionária em telas pequenas e nitidez em telas de alta densidade.
+
+**Correções**
+- Pular **por cima** do arco de chegada deixava a fase sem fim (a Lumi ficava presa no fim do mapa). Agora cruzar o arco em qualquer altura conta, com o bônus máximo. Achado pelo bot em 7-4; teste em `mechanics.test.ts`.
+- Nomes longos de ilha encostavam no contador de pérolas do mapa.
+- Abismo Azul ganhou lâmpadas de coral (só a luz da Lumi não bastava).
+
+**Números**: 223 testes de unidade, 5 cenários e2e, 59 fases validadas por alcance, 19 replays.
+
+**Pendente (depende de gente jogando)**: sensação do pulo e curva de dificuldade das fases novas.
