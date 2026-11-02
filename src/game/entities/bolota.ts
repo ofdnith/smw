@@ -4,7 +4,7 @@ import { approach } from '../../engine/rng';
 import { moveBody, groundAhead } from '../physics/tilecollision';
 import { Entity } from './base';
 import type { World } from '../world';
-import { BOLOTA } from '../../content/art/bolota';
+import { BOLOTA, BOLOTA_EYE } from '../../content/art/bolota';
 import { sign } from './enemies';
 
 export class Bolota extends Entity {
@@ -68,7 +68,7 @@ export class Bolota extends Entity {
     const f = this.fleeing > 0 ? 1 + (Math.floor(this.anim / 3) % 3) : moving ? 1 + (Math.floor(this.anim / 6) % 3) : 0;
     r.drawSprite(spr, f, this.ix(alpha), this.iy(alpha), this.facing < 0);
     if (!moving && this.fleeing === 0 && Math.floor(this.anim / 50) % 5 === 4) {
-      r.drawSprite(BOLOTA.blink, 0, this.ix(alpha) + (this.facing < 0 ? 3 : 11), this.iy(alpha) + 5, this.facing < 0);
+      r.drawSprite(BOLOTA.blink, 0, this.ix(alpha) + (this.facing < 0 ? BOLOTA_EYE.xFlip : BOLOTA_EYE.x), this.iy(alpha) + BOLOTA_EYE.y, this.facing < 0);
     }
   }
 }
