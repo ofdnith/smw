@@ -31,7 +31,7 @@ function l21(): string[] {
   })();
   const slopes = dots(cat(hill(H, 3, 2, 4), put(flat(6, H, 3), 2, H - 4, 'n'), hill(H, 3, 3, 3)), [[4, H - 7, 'B'], [5, H - 7, '?'], [16, H - 8, '+']]);
   const pond = cat(put(flat(2, H, 3), 1, H - 4, '\\'), dots(pool(10, H, 1, 2), [[4, H - 3, 'ª'], [2, H - 8, '='], [3, H - 8, '='], [7, H - 8, '='], [8, H - 8, '=']]), put(flat(2, H, 3), 0, H - 4, '/'));
-  const end = dots(flat(24, H, 3), [[3, H - 4, 'f'], [8, H - 8, '?'], [9, H - 8, '?'], [12, H - 4, 'n'], [16, H - 10, 'p'], [15, H - 9, '='], [16, H - 9, '='], [17, H - 9, '='], [20, H - 4, 'g']]);
+  const end = dots(flat(24, H, 3), [[3, H - 4, 'f'], [8, H - 8, '?'], [9, H - 8, '?'], [12, H - 4, 'n'], [16, H - 8, 'p'], [15, H - 7, '='], [16, H - 7, '='], [17, H - 7, '='], [20, H - 4, 'g']]);
   return cat(start, roots, g1, net, slopes, pond, end);
 }
 
@@ -75,9 +75,9 @@ function l23(): string[] {
     let s = flat(26, H, 3);
     s = dots(s, [[2, H - 4, 'c'], [6, H - 4, 'n'], [10, H - 8, '?'], [11, H - 8, '!'], [14, H - 4, 'f'], [19, H - 4, 'u']]);
     // rede escondida que sobe até a porta dourada
-    s = vline(s, 23, 0, H - 4, 'V');
-    s = hline(s, 20, 0, 3, '=');
-    s = put(s, 21, -1 + 1, '9');
+    s = vline(s, 23, 1, H - 5, 'V');
+    s = hline(s, 20, 1, 3, '=');
+    s = put(s, 21, 1, '9');
     return s;
   })();
   const slopes = dots(cat(hill(H, 3, 3, 3), put(flat(8, H, 3), 3, H - 4, 'f'), hill(H, 3, 2, 5)), [[4, H - 7, 'n'], [15, H - 7, 'p'], [16, H - 9, '$'], [17, H - 9, '$']]);
@@ -120,7 +120,7 @@ function l24(): string[] {
   s = box(s, 58, H - 8, 2, 6, '%');
   s = dots(s, [[58, H - 9, 'p'], [62, H - 3, '¬']]);
   for (let x = 62; x < 76; x++) { s = put(s, x, H - 2, '~'); s = put(s, x, H - 3, 'W'); }
-  s = dots(s, [[64, H - 7, 'q'], [70, H - 5, 'm'], [68, H - 3, 'ª'], [73, H - 11, 'p']]);
+  s = dots(s, [[64, H - 7, 'q'], [70, H - 5, 'm'], [68, H - 3, 'ª'], [65, H - 12, 'p']]);
   s = box(s, 76, H - 4, 3, 2, '%');
   s = dots(s, [[82, H - 3, 'w'], [85, H - 7, '?'], [90, H - 3, 'g']]);
   return s;

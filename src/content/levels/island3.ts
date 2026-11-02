@@ -31,7 +31,7 @@ function l31(): string[] {
       s = put(s, col, H - 7 + i, '[');
       s = put(s, col + 1, H - 7 + i, ']');
     }
-    s = dots(s, [[3, H - 8, 'u'], [5, H - 11, '$'], [6, H - 11, '$'], [7, H - 11, '$'], [2, H - 12, 'p']]);
+    s = dots(s, [[3, H - 8, 'u'], [5, H - 11, '$'], [6, H - 11, '$'], [7, H - 11, '$'], [2, H - 10, 'p']]);
     return s;
   })();
   const windGap = (() => {
@@ -79,8 +79,8 @@ function l32(): string[] {
     s = dots(s, [[3, HT - 13, 'v'], [6, HT - 13, 'i'], [12, HT - 13, 'r'], [15, HT - 17, '$'], [16, HT - 17, '$'], [17, HT - 17, '$'], [20, HT - 13, 'u'], [24, HT - 13, 'v']]);
     s = box(s, 8, HT - 15, 2, 3, '#');
     s = hline(s, 14, HT - 16, 5, '=');
-    s = put(s, 26, HT - 19, 'p');
-    s = hline(s, 25, HT - 18, 3, '=');
+    s = put(s, 24, HT - 19, 'p');
+    s = hline(s, 23, HT - 18, 3, '=');
     return s;
   })();
   const descent = cat(stairsDown(HT, 3, 5, 2), dots(flat(16, HT, 3), [[4, HT - 4, 'r'], [11, HT - 4, 'g']]));
@@ -99,9 +99,9 @@ function l33(): string[] {
     s = hline(s, 30, HT - 10, 3, '=');
     s = dots(s, [[11, HT - 10, '$'], [12, HT - 10, '$'], [21, HT - 8, 'p'], [8, HT - 4, 'r'], [18, HT - 4, 'u'], [28, HT - 4, 'r'], [33, HT - 4, 'c'], [40, HT - 4, 'u']]);
     // secreto: corrente de vento que leva ao topo
-    for (let x = 38; x < 41; x++) s = vline(s, x, 1, HT - 7, '&');
-    s = hline(s, 36, 1, 6, '=');
-    s = put(s, 38, 0, '9');
+    for (let x = 38; x < 41; x++) s = vline(s, x, 2, HT - 8, '&');
+    s = hline(s, 36, 2, 6, '=');
+    s = put(s, 37, 2, '9');
     return s;
   })();
   const bridge = (() => {

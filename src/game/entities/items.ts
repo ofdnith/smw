@@ -147,6 +147,7 @@ export class LightOrb extends Entity {
             const idx = ty * world.w + tx;
             if (!world.revealed.has(idx)) {
               world.revealed.add(idx);
+              world.set(tx, ty, T.Used);
               sfx('reveal');
               world.sparkle(tx * TILE + 8, ty * TILE + 8, '#fff7b0', 4, 0.6);
             }

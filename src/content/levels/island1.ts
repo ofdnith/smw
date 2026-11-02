@@ -12,10 +12,10 @@ function l11(): string[] {
   const g1 = gap(3, H);
   const stairs = cat(stairsUp(H, 3, 3), dots(flat(6, H, 6), [[2, H - 7, 'v'], [1, H - 10, '$'], [2, H - 10, '$'], [3, H - 10, '$']]), stairsDown(H, 3, 3));
   const g2 = put(put(gap(5, H), 1, H - 7, '==='), 2, H - 8, 'u');
-  const run2 = dots(flat(18, H, 3), [[2, H - 4, 'c'], [7, H - 9, '='], [8, H - 9, '='], [9, H - 9, '='], [8, H - 10, 'p'], [12, H - 4, 'r'], [15, H - 4, 'u']]);
+  const run2 = dots(flat(18, H, 3), [[2, H - 4, 'c'], [7, H - 7, '='], [8, H - 7, '='], [9, H - 7, '='], [8, H - 8, 'p'], [12, H - 4, 'r'], [15, H - 4, 'u']]);
   const water = cat(put(flat(3, H, 3), 2, H - 4, '\\'), pool(8, H, 1, 2), put(flat(3, H, 3), 0, H - 4, '/'));
   const water2 = dots(water, [[6, H - 3, 'ª']]);
-  const high = dots(flat(16, H, 3), [[2, H - 8, 'B'], [3, H - 8, 'B'], [4, H - 8, '?'], [5, H - 8, 'B'], [8, H - 4, 'y'], [8, H - 11, '$'], [9, H - 12, '$'], [10, H - 13, 'p'], [13, H - 4, 'v']]);
+  const high = dots(flat(16, H, 3), [[2, H - 8, 'B'], [3, H - 8, 'B'], [4, H - 8, '?'], [5, H - 8, 'B'], [8, H - 4, 'y'], [7, H - 8, '$'], [8, H - 9, '$'], [9, H - 10, 'p'], [13, H - 4, 'v']]);
   const g3 = put(gap(4, H), 1, H - 6, '==');
   const end = dots(flat(22, H, 3), [[2, H - 4, 'r'], [5, H - 4, 'r'], [9, H - 8, '?'], [15, H - 4, 'g']]);
   return cat(start, hill1, blocks, g1, stairs, g2, run2, water2, high, g3, end);
@@ -80,10 +80,10 @@ function l13(): string[] {
 // ---------- 1-S Enseada Escondida: fase bônus de pérolas com molas.
 function l1s(): string[] {
   let s = flat(60, H, 3);
-  s = dots(s, [[3, H - 4, 's'], [8, H - 4, 'y'], [8, H - 12, 'p']]);
-  for (let i = 0; i < 8; i++) s = put(s, 12 + i, H - 11 + (i % 2), '$');
-  s = hline(s, 14, H - 8, 6, '=');
-  s = dots(s, [[22, H - 4, 'y'], [22, H - 13, 'p'], [26, H - 4, 'r'], [30, H - 8, '?'], [31, H - 8, '?'], [32, H - 8, '!'], [36, H - 4, 'y'], [40, H - 9, '='], [41, H - 9, '='], [42, H - 9, '='], [41, H - 10, 'p'], [46, H - 4, 'v'], [54, H - 4, 'g']]);
+  s = dots(s, [[3, H - 4, 's'], [8, H - 4, 'y'], [8, H - 10, 'p']]);
+  for (let i = 0; i < 8; i++) s = put(s, 12 + i, H - 9 + (i % 2), '$');
+  s = hline(s, 14, H - 6, 6, '=');
+  s = dots(s, [[22, H - 4, 'y'], [22, H - 10, 'p'], [26, H - 4, 'r'], [30, H - 8, '?'], [31, H - 8, '?'], [32, H - 8, '!'], [36, H - 4, 'y'], [40, H - 7, '='], [41, H - 7, '='], [42, H - 7, '='], [41, H - 8, 'p'], [46, H - 4, 'v'], [54, H - 4, 'g']]);
   return s;
 }
 
@@ -107,8 +107,8 @@ function l14(): string[] {
   s = box(s, 52, H2 - 5, 6, 3, '%');
   s = put(s, 54, H2 - 6, '¬');
   s = hline(s, 60, H2 - 7, 4, '=');
-  s = hline(s, 66, H2 - 10, 4, '=');
-  s = dots(s, [[67, H2 - 11, 'p'], [63, H2 - 3, '¬'], [70, H2 - 3, 'w'], [74, H2 - 3, 'u'], [78, H2 - 6, '?'], [84, H2 - 3, 'g']]);
+  s = hline(s, 66, H2 - 9, 4, '=');
+  s = dots(s, [[67, H2 - 10, 'p'], [63, H2 - 3, '¬'], [70, H2 - 3, 'w'], [74, H2 - 3, 'u'], [78, H2 - 6, '?'], [84, H2 - 3, 'g']]);
   // lava de sal no fosso
   s = box(s, 58, H2 - 2, 6, 2, 'X');
   return s;
