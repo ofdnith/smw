@@ -47,6 +47,17 @@ export interface LevelDef {
   kind?: 'normal' | 'forte' | 'farol' | 'bonus' | 'desafio' | 'final';
   /** dica do faroleiro-fantasma */
   hint?: string;
+  /** número exibido no mapa (quando difere do id) */
+  label?: string;
+}
+
+/** Rótulo curto de uma fase para o mapa e a tela de título da fase. */
+export function levelLabel(def: LevelDef): string {
+  if (def.label) return def.label;
+  if (def.kind === 'forte') return 'FORTE';
+  if (def.kind === 'farol') return 'FAROL';
+  if (def.kind === 'final') return 'FINAL';
+  return def.id;
 }
 
 export interface Room {

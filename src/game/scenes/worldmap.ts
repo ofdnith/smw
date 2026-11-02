@@ -9,6 +9,8 @@ import { NODES, EDGES, ISLANDS, MAP_W, MAP_H, nodeById, type MapNode, type MapEd
 import { LEVELS } from '../../content/levels';
 import { LevelScene } from './level';
 import { BonusScene } from './bonus';
+import { CasinoScene } from './casino';
+import { levelLabel } from '../level/format';
 import { CutsceneScene, CUTSCENES } from './cutscene';
 import { MUSIC } from '../../content/music';
 import { LUMI, LUMI_PALETTE, lumiDef } from '../../content/art/lumi';
@@ -173,6 +175,12 @@ export class WorldMapScene implements Scene {
       game.transitionTo(() => game.push(new BonusScene(n.island)), 'iris', this.lumiX() - this.camX, this.lumiY() - this.camY);
       return;
     }
+    if (n.kind === 'casino') {
+      sfx('select');
+      const seed = (slot0(game) * 7919 + this.frame * 31 + n.island) >>> 0;
+      game.transitionTo(() => game.push(new CasinoScene(seed)), 'iris', this.lumiX() - this.camX, this.lumiY() - this.camY);
+      return;
+    }
     if (!n.level) return;
     const def = LEVELS[n.level];
     if (!def) return;
@@ -276,14 +284,14 @@ export class WorldMapScene implements Scene {
     r.drawSprite(ITEMS.amber, Math.floor(this.frame / 8) % 4, VIEW_W - 50, 3, false, false);
     r.text(`${slot.amber}`.padStart(2, '0'), VIEW_W - 40, 3, '#ffffff');
     const totalPearls = Object.values(slot.pearls).reduce((s, m) => s + ((m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)), 0);
-    r.drawSprite(ITEMS.pearl, 0, VIEW_W - 110, 2, false, false);
-    r.text(`${totalPearls}`, VIEW_W - 98, 3, '#dff6ff');
+    r.drawSprite(ITEMS.pearl, 0, 42, 2, false, false);
+    r.text(`${totalPearls}`, 54, 3, '#dff6ff');
     // nome da fase
     if (!this.moving && this.node.level) {
       const lvl = LEVELS[this.node.level];
       if (lvl) {
         r.fillRect(0, VIEW_H - 24, VIEW_W, 24, 'rgba(0,0,0,0.55)');
-        r.text(`${this.node.level}  ${lvl.name}`, VIEW_W / 2, VIEW_H - 19, '#ffffff', 'center');
+        r.text(`${levelLabel(lvl)}  ${lvl.name}`, VIEW_W / 2, VIEW_H - 19, '#ffffff', 'center');
         const pm = slot.pearls[this.node.level] ?? 0;
         for (let i = 0; i < 3; i++) {
           r.ctx.globalAlpha = (pm & (1 << i)) ? 1 : 0.25;
@@ -296,6 +304,10 @@ export class WorldMapScene implements Scene {
     } else if (!this.moving && this.node.kind === 'bonus') {
       r.fillRect(0, VIEW_H - 24, VIEW_W, 24, 'rgba(0,0,0,0.55)');
       r.text('TENDA DA ONDINA', VIEW_W / 2, VIEW_H - 15, '#ffd1dc', 'center');
+    } else if (!this.moving && this.node.kind === 'casino') {
+      r.fillRect(0, VIEW_H - 24, VIEW_W, 24, 'rgba(0,0,0,0.55)');
+      r.text('CASSINO DE CONCHAS', VIEW_W / 2, VIEW_H - 19, '#ffe0b0', 'center');
+      r.text('JOGO DA MEMORIA - 10 AMBAR', VIEW_W / 2, VIEW_H - 10, '#c9ccd6', 'center');
     }
     if (slot.reserve !== 'none') {
       r.box(VIEW_W / 2 - 11, 16, 22, 22, 'rgba(10,20,40,0.7)', '#c9ccd6');
@@ -350,6 +362,9 @@ export class WorldMapScene implements Scene {
       case 'bonus':
         r.drawSprite(MAP_ICONS.tent, 0, x - 8, y - 12);
         break;
+      case 'casino':
+        r.drawSprite(MAP_ICONS.casino, Math.floor(this.frame / 20) % 2, x - 8, y - 13);
+        break;
       case 'junction':
       case 'bridge':
         r.fillRect(x - 1, y - 1, 3, 3, 'rgba(255,255,255,0.8)', true);
@@ -375,4 +390,9 @@ export class WorldMapScene implements Scene {
       }
     }
   }
+}
+
+/** Semente simples a partir do tempo jogado do arquivo (fora do gameplay determinístico). */
+function slot0(game: Game): number {
+  return game.slot.playtimeFrames + game.slot.deaths * 13;
 }
