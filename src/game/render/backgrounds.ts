@@ -1,6 +1,14 @@
-/** Fundos com parallax por tema, desenhados proceduralmente. */
+/**
+ * Fundos com parallax por ambientação. Cada camada é uma faixa de pixel art esculpida uma vez
+ * (morros, árvores, montanhas, nuvens, cristais...) e repetida horizontalmente.
+ * Céus em faixas de cor, como nos fundos de 16 bits.
+ */
 import { Renderer, VIEW_W, VIEW_H } from '../../engine/renderer';
 import type { Theme } from '../level/format';
+import { Canvas, Materials } from '../../engine/pixelart';
+import { compileFrame, type Frame } from '../../engine/sprites';
+import { LIGHTHOUSE } from '../../content/art/npcs';
+import { getSprite } from '../../engine/sprites';
 
 function h(x: number, y = 0): number {
   let v = (x * 374761393 + y * 668265263) | 0;
@@ -16,158 +24,276 @@ export interface BgOpts {
   frame: number;
 }
 
+// ------------------------------------------------------------------ faixas esculpidas (cache)
+
+const W = 256;
+type Strip = Frame & { bottom: string | null };
+const cache = new Map<string, Strip>();
+function strip(key: string, w: number, hgt: number, mats: Materials, draw: (c: Canvas) => void, outline = true): Strip {
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const c = new Canvas(w, hgt, mats);
+  draw(c);
+  if (outline) c.outline();
+  const pal = mats.palette();
+  const p = c.get(Math.floor(w / 2), hgt - 1);
+  const bottom = p ? (p.m < 0 ? mats.outline : mats.list[p.m].ramp[p.t]) : null;
+  const f: Strip = { ...compileFrame(c.toString(), pal), bottom };
+  void pal;
+  cache.set(key, f);
+  return f;
+}
+/** Repete a faixa na horizontal com deslocamento de parallax; `fill` pinta da base da faixa até o pé da tela. */
+function tileX(r: Renderer, f: Strip, camX: number, speed: number, y: number, drift = 0, fill = false): void {
+  const off = (((camX * speed + drift) % f.w) + f.w) % f.w;
+  for (let x = -off; x < VIEW_W; x += f.w) r.ctx.drawImage(f.img, Math.round(x), Math.round(y));
+  if (fill && f.bottom && y + f.h < VIEW_H) r.fillRect(0, Math.round(y) + f.h, VIEW_W, VIEW_H, f.bottom);
+}
+/** Céu em faixas de cor (sem degradê suave, como no hardware de 16 bits). */
+function bands(r: Renderer, colors: string[], y0 = 0, y1 = VIEW_H): void {
+  const n = colors.length, hh = (y1 - y0) / n;
+  colors.forEach((c, i) => r.fillRect(0, y0 + Math.floor(i * hh), VIEW_W, Math.ceil(hh) + 1, c));
+}
+/** Desenha uma forma também deslocada de ±W para a faixa emendar sem costura. */
+function wrap(fn: (dx: number) => void): void {
+  fn(0); fn(-W); fn(W);
+}
+
+// morros arredondados com volume
+function hillsStrip(key: string, hgt: number, base: string, top: string | null, count: number, seed: number, minR: number, maxR: number, squash = 1): Strip {
+  const mats = new Materials(top ? { hill: base, cap: top } : { hill: base });
+  return strip(key, W, hgt, mats, (c) => {
+    for (let i = 0; i < count; i++) {
+      const x = (i + h(i, seed) * 0.6) * (W / count);
+      const rr = minR + h(i, seed + 1) * (maxR - minR);
+      const ry = rr * (0.8 + h(i, seed + 2) * 0.5) * squash;
+      wrap((dx) => c.ellipse(x + dx, hgt - 1 + ry * 0.15, rr, ry, 'hill', 'sphere'));
+    }
+    c.rect(0, hgt - 3, W, 3, 'hill', 'flat', 0, -1);
+    if (top) for (let x = 0; x < W; x++) for (let y = 0; y < hgt; y++) {
+      const p = c.get(x, y);
+      if (p && !c.get(x, y - 1)) { c.set(x, y, 'cap', 3); c.set(x, y + 1, 'cap', 2); if (h(x, seed) > 0.5) c.set(x, y + 2, 'cap', 1); }
+    }
+  });
+}
+// montanhas pontudas com neve
+function mountainsStrip(key: string, hgt: number, rock: string, snow: string, count: number, seed: number): Strip {
+  const mats = new Materials({ rock, snow });
+  return strip(key, W, hgt, mats, (c) => {
+    for (let i = 0; i < count; i++) {
+      const x = (i + h(i, seed) * 0.5) * (W / count), peak = 6 + h(i, seed + 1) * (hgt * 0.45), half = 22 + h(i, seed + 2) * 26;
+      wrap((dx) => {
+        c.poly([[x + dx - half, hgt], [x + dx, peak], [x + dx + half, hgt]], 'rock', 'vgrad');
+        // face iluminada (esquerda) e neve no pico
+        c.poly([[x + dx - half * 0.55, hgt], [x + dx, peak], [x + dx - 2, hgt]], 'rock', 'flat', 1);
+        c.poly([[x + dx - half * 0.28, peak + (hgt - peak) * 0.28], [x + dx, peak], [x + dx + half * 0.28, peak + (hgt - peak) * 0.28], [x + dx + 3, peak + (hgt - peak) * 0.2], [x + dx - 2, peak + (hgt - peak) * 0.3]], 'snow', 'flat', 1);
+      });
+    }
+  });
+}
+// floresta de copas redondas
+function forestStrip(key: string, hgt: number, leaf: string, trunk: string, count: number, seed: number, rMin: number, rMax: number): Strip {
+  const mats = new Materials({ leaf, trunk });
+  return strip(key, W, hgt, mats, (c) => {
+    for (let i = 0; i < count; i++) {
+      const x = (i + h(i, seed) * 0.7) * (W / count), rr = rMin + h(i, seed + 1) * (rMax - rMin);
+      const cy = hgt - rr * 1.3 - h(i, seed + 3) * 8;
+      wrap((dx) => {
+        c.rect(Math.round(x + dx - 2), Math.round(cy), 4, hgt, 'trunk', 'cyl');
+        c.circle(x + dx, cy, rr, 'leaf', 'sphere');
+        c.circle(x + dx - rr * 0.6, cy + rr * 0.4, rr * 0.7, 'leaf', 'sphere');
+        c.circle(x + dx + rr * 0.6, cy + rr * 0.45, rr * 0.65, 'leaf', 'sphere');
+      });
+    }
+    c.rect(0, hgt - 6, W, 6, 'leaf', 'flat', 0, -1);
+  });
+}
+// nuvem fofa
+function cloud(key: string, w: number, hgt: number, color: string, seed: number): Strip {
+  const mats = new Materials({ cloud: color }, '#6f86b8');
+  return strip(key, w, hgt, mats, (c) => {
+    const n = Math.max(3, Math.floor(w / 10));
+    for (let i = 0; i < n; i++) {
+      const x = 5 + (i / (n - 1)) * (w - 10), rr = 4 + h(i, seed) * (hgt * 0.38);
+      c.circle(x, hgt - rr - 1, rr, 'cloud', 'sphere', 1);
+    }
+    c.rect(4, hgt - 5, w - 8, 4, 'cloud', 'flat', 0, 1);
+  });
+}
+function cloudLayer(r: Renderer, camX: number, speed: number, y0: number, color: string, f: number, seed: number, n = 5): void {
+  for (let i = 0; i < n; i++) {
+    const w = 32 + Math.floor(h(i, seed) * 4) * 8, hgt = 14 + Math.floor(h(i, seed + 1) * 3) * 3;
+    const cf = cloud(`cloud:${color}:${w}:${hgt}:${seed + i}`, w, hgt, color, seed + i);
+    const span = VIEW_W + 120;
+    const x = ((i * 97 + h(i, seed + 2) * 60 - camX * speed + f * 0.08) % span + span) % span - 60;
+    r.ctx.drawImage(cf.img, Math.round(x), Math.round(y0 + h(i, seed + 3) * 34));
+  }
+}
+// palmeira
+function palm(): Strip {
+  const mats = new Materials({ trunk: '#b8864a', leaf: '#3fb05a', coco: '#7a4a2a' });
+  return strip('palm', 30, 40, mats, (c) => {
+    for (let y = 12; y < 40; y++) { const x = 15 + Math.sin(y / 9) * 3; c.set(x, y, 'trunk', (y % 3 === 0) ? 1 : 3); c.set(x + 1, y, 'trunk', 2); }
+    for (const [ex, ey] of [[2, 14], [6, 6], [15, 3], [24, 6], [28, 14]] as [number, number][]) c.line(15, 10, ex, ey, 'leaf', 2, 2);
+    for (const [ex, ey] of [[4, 11], [26, 11]] as [number, number][]) c.line(15, 10, ex, ey, 'leaf', 3, 2);
+    c.circle(14, 11, 1.4, 'coco', 'sphere'); c.circle(17, 11, 1.4, 'coco', 'sphere');
+  });
+}
+function sun(r: Renderer, x: number, y: number, core: string, glow: string): void {
+  r.ctx.globalAlpha = 0.25; r.circle(x, y, 20, glow, false); r.ctx.globalAlpha = 0.45; r.circle(x, y, 16, glow, false); r.ctx.globalAlpha = 1;
+  r.circle(x, y, 12, core, false); r.circle(x - 3, y - 3, 6, '#ffffff', false);
+}
+function sea(r: Renderer, camX: number, y: number, colors: string[], foam: string, f: number): void {
+  bands(r, colors, y, VIEW_H);
+  for (let i = 0; i < 16; i++) {
+    const x = ((i * 37 - camX * 0.25 + f * 0.3) % (VIEW_W + 40)) - 20;
+    r.fillRect(x, y + 3 + (i % 4) * 7, 8 + (i % 3) * 4, 1, foam);
+  }
+}
+function stars(r: Renderer, camX: number, f: number, n: number, maxY = 120): void {
+  for (let i = 0; i < n; i++) {
+    const x = ((i * 83 + h(i, 31) * 50 - camX * 0.05) % VIEW_W + VIEW_W) % VIEW_W;
+    const y = h(i, 32) * maxY;
+    const tw = (f + i * 13) % 90 < 8;
+    r.fillRect(x, y, 1, 1, tw ? '#ffffff' : h(i, 33) > 0.5 ? '#c8d8ff' : '#8a9ad8');
+    if (tw) { r.fillRect(x - 1, y, 3, 1, 'rgba(255,255,255,0.6)'); r.fillRect(x, y - 1, 1, 3, 'rgba(255,255,255,0.6)'); }
+  }
+}
+
+// ------------------------------------------------------------------ fundos por tema
+
 export function drawBackground(r: Renderer, theme: Theme, camX: number, camY: number, o: BgOpts): void {
   const f = o.frame;
+  const ctx = r.ctx;
   switch (theme) {
     case 'praia': {
-      r.gradient([[0, '#5fc3ff'], [0.6, '#bfe9ff'], [1, '#fff2c8']]);
-      sun(r, 260, 30, '#fff7b0');
-      clouds(r, camX, 0.15, 20, '#ffffff', f);
-      // mar ao fundo
-      const seaY = 110 - camY * 0.1;
-      r.fillRect(0, seaY, VIEW_W, VIEW_H - seaY, '#3fa7d6');
-      for (let i = 0; i < 12; i++) {
-        const x = ((i * 37 - camX * 0.25 + f * 0.3) % (VIEW_W + 40)) - 20;
-        r.fillRect(x, seaY + 4 + (i % 3) * 9, 14, 1, '#bfe9ff');
+      bands(r, ['#4ab8ff', '#5cc2ff', '#70ccff', '#86d6ff', '#9ee0ff', '#b8eaff', '#d4f2ff'], 0, 120);
+      sun(r, 262, 34, '#fff3a0', '#fff8d0');
+      cloudLayer(r, camX, 0.12, 10, '#ffffff', f, 1);
+      const seaY = Math.round(108 - camY * 0.1);
+      sea(r, camX, seaY, ['#2f9fe0', '#2a8fd0', '#2580c0'], '#d4f2ff', f);
+      tileX(r, hillsStrip('praia:far', 24, '#5aa8c8', '#8ad0e0', 3, 7, 34, 50, 0.32), camX, 0.2, seaY - 22);
+      tileX(r, hillsStrip('praia:dunes', 40, '#f0d49a', '#fff0c4', 5, 3, 26, 40, 0.55), camX, 0.4, Math.round(140 - camY * 0.3) - 40, 0, true);
+      const pf = palm();
+      for (let i = 0; i < 4; i++) {
+        const span = VIEW_W + 80, x = ((i * 120 + h(i, 7) * 50 - camX * 0.55) % span + span) % span - 40;
+        ctx.drawImage(pf.img, Math.round(x), Math.round(118 - camY * 0.45));
       }
-      // dunas
-      hills(r, camX, 0.4, 130 - camY * 0.3, '#f2dca6', 60, 20, 3);
-      hills(r, camX, 0.6, 150 - camY * 0.5, '#e8c98a', 40, 14, 5);
-      palms(r, camX, 0.6, 150 - camY * 0.5);
       break;
     }
     case 'bosque': {
-      r.gradient([[0, '#6a9a7a'], [1, '#c8e0b0']]);
-      clouds(r, camX, 0.1, 15, '#e8f0e0', f);
-      trees(r, camX, 0.3, 120 - camY * 0.2, '#4a7a5a', '#3a5a4a', 50);
-      trees(r, camX, 0.55, 150 - camY * 0.4, '#2f5a3f', '#1f3a2f', 38);
-      // chuva fina
+      bands(r, ['#8ec8a0', '#9ad0aa', '#a6d8b2', '#b4e0bc', '#c4e8c6', '#d4eed0']);
+      cloudLayer(r, camX, 0.08, 6, '#eef8ea', f, 2, 4);
+      tileX(r, mountainsStrip('bosque:mtn', 70, '#7aa898', '#c8e8d8', 4, 11), camX, 0.12, Math.round(40 - camY * 0.1));
+      tileX(r, forestStrip('bosque:far', 90, '#4a9a6a', '#3a5a3a', 9, 5, 9, 14), camX, 0.3, Math.round(38 - camY * 0.2));
+      tileX(r, forestStrip('bosque:near', 80, '#2f7a4a', '#4a3424', 6, 9, 13, 19), camX, 0.55, Math.round(62 - camY * 0.4), 0, true);
       for (let i = 0; i < 30; i++) {
-        const x = (i * 53 + h(i) * 40 - camX * 0.8) % VIEW_W;
+        const x = (((i * 53 + h(i) * 40 - camX * 0.8) % VIEW_W) + VIEW_W) % VIEW_W;
         const y = (f * 4 + i * 71) % VIEW_H;
-        r.fillRect(((x % VIEW_W) + VIEW_W) % VIEW_W, y, 1, 4, 'rgba(220,240,255,0.5)');
+        r.fillRect(x, y, 1, 4, 'rgba(230,245,255,0.45)');
       }
       break;
     }
     case 'penhasco': {
-      r.gradient([[0, '#7fc8ff'], [1, '#e8f6ff']]);
-      clouds(r, camX, 0.2, 30, '#ffffff', f);
-      clouds(r, camX, 0.35, 70, '#f4faff', f + 300);
-      hills(r, camX, 0.3, 120 - camY * 0.2, '#8a9ab0', 90, 40, 2);
-      windmills(r, camX, 0.45, 130 - camY * 0.3, f);
-      hills(r, camX, 0.6, 160 - camY * 0.5, '#6a7a90', 50, 18, 4);
+      bands(r, ['#5ab0f0', '#68b8f2', '#78c2f4', '#8acbf6', '#9ed6f8', '#b6e2fa', '#d0eefc']);
+      cloudLayer(r, camX, 0.15, 14, '#ffffff', f, 3);
+      tileX(r, mountainsStrip('penhasco:mtn', 90, '#8a98b8', '#f4f8ff', 4, 21), camX, 0.15, Math.round(30 - camY * 0.15));
+      cloudLayer(r, camX, 0.3, 80, '#f4faff', f + 300, 4, 4);
+      tileX(r, hillsStrip('penhasco:hills', 50, '#6a9a6a', '#9ad87a', 4, 13, 28, 44, 0.6), camX, 0.45, Math.round(90 - camY * 0.35), 0, true);
+      // moinhos
+      for (let i = 0; i < 2; i++) {
+        const span = VIEW_W + 120, x = ((i * 200 + 90 - camX * 0.45) % span + span) % span - 60, y = Math.round(124 - camY * 0.35);
+        r.fillRect(x - 4, y - 26, 8, 28, '#e8e0d0'); r.fillRect(x + 1, y - 26, 3, 28, '#c8bca8'); r.fillRect(x - 5, y - 30, 10, 5, '#a8784a');
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+        for (let k = 0; k < 4; k++) { const a = f / 80 + (k * Math.PI) / 2; ctx.beginPath(); ctx.moveTo(x, y - 27); ctx.lineTo(x + Math.cos(a) * 15, y - 27 + Math.sin(a) * 15); ctx.stroke(); }
+      }
       break;
     }
     case 'recife': {
       if (!o.underwater) {
-        // à beira do recife: céu de fim de tarde, mar e corais na areia
-        r.gradient([[0, '#5fa8e8'], [0.55, '#ffd1dc'], [1, '#ffe8c8']]);
-        sun(r, 70, 40, '#fff0b0');
-        clouds(r, camX, 0.15, 18, '#ffffff', f);
-        const seaY = 112 - camY * 0.1;
-        r.fillRect(0, seaY, VIEW_W, VIEW_H - seaY, '#2f8fcf');
-        for (let i = 0; i < 12; i++) {
-          const x = ((i * 41 - camX * 0.25 + f * 0.3) % (VIEW_W + 40)) - 20;
-          r.fillRect(x, seaY + 4 + (i % 3) * 9, 14, 1, '#bfe9ff');
-        }
-        hills(r, camX, 0.4, 134 - camY * 0.3, '#f2c98a', 70, 16, 7);
-        corals(r, camX, 0.6, 160 - camY * 0.5);
+        bands(r, ['#5a9ae8', '#7aa8e8', '#a0b4e4', '#c8bce0', '#ecc4d8', '#ffd0d4', '#ffe0cc'], 0, 120);
+        sun(r, 70, 44, '#fff0a0', '#ffd8b0');
+        cloudLayer(r, camX, 0.12, 12, '#fff4f4', f, 5);
+        const seaY = Math.round(112 - camY * 0.1);
+        sea(r, camX, seaY, ['#3a8fd0', '#2f80c4', '#2670b6'], '#ffe8f0', f);
+        tileX(r, hillsStrip('recife:dunes', 40, '#f4cc90', '#ffe4b8', 5, 31, 26, 40, 0.5), camX, 0.4, Math.round(140 - camY * 0.3) - 40, 0, true);
+        tileX(r, coralStrip(), camX, 0.6, Math.round(96 - camY * 0.5), 0, true);
         break;
       }
-      r.gradient([[0, '#2f8fcf'], [0.5, '#1f6fae'], [1, '#143f6f']]);
-      // raios de luz
+      bands(r, ['#2f9ad8', '#2a8acc', '#257ac0', '#206ab2', '#1c5aa2', '#184a90', '#143c7c']);
       for (let i = 0; i < 5; i++) {
         const x = ((i * 90 - camX * 0.2) % (VIEW_W + 60)) - 30;
-        r.ctx.globalAlpha = 0.08;
-        r.ctx.fillStyle = '#ffffff';
-        r.ctx.beginPath();
-        r.ctx.moveTo(x, 0); r.ctx.lineTo(x + 30, 0); r.ctx.lineTo(x + 60 + Math.sin(f / 60 + i) * 6, VIEW_H); r.ctx.lineTo(x + 10, VIEW_H);
-        r.ctx.fill();
-        r.ctx.globalAlpha = 1;
+        ctx.globalAlpha = 0.08; ctx.fillStyle = '#ffffff'; ctx.beginPath();
+        ctx.moveTo(x, 0); ctx.lineTo(x + 26, 0); ctx.lineTo(x + 60 + Math.sin(f / 60 + i) * 6, VIEW_H); ctx.lineTo(x + 12, VIEW_H); ctx.fill();
+        ctx.globalAlpha = 1;
       }
-      corals(r, camX, 0.4, 150 - camY * 0.3);
-      // bolhas
+      tileX(r, kelpStrip(), camX, 0.3, Math.round(70 - camY * 0.2), Math.sin(f / 50) * 2);
+      tileX(r, coralStrip(), camX, 0.5, Math.round(80 - camY * 0.3));
       for (let i = 0; i < 14; i++) {
         const x = ((i * 47 + Math.sin((f + i * 20) / 40) * 6 - camX * 0.5) % VIEW_W + VIEW_W) % VIEW_W;
-        const y = (VIEW_H - ((f * 0.6 + i * 50) % (VIEW_H + 20)));
-        r.fillRect(x, y, 2, 2, 'rgba(220,240,255,0.5)');
+        const y = VIEW_H - ((f * 0.6 + i * 50) % (VIEW_H + 20));
+        r.fillRect(x, y, 2, 2, 'rgba(220,240,255,0.55)'); r.fillRect(x, y, 1, 1, 'rgba(255,255,255,0.9)');
       }
       break;
     }
     case 'minas': {
-      r.gradient([[0, '#3a3a4a'], [1, '#6a6a7a']]);
-      // cristais de sal
-      for (let i = 0; i < 16; i++) {
-        const x = ((i * 61 - camX * 0.3) % (VIEW_W + 40) + VIEW_W + 40) % (VIEW_W + 40) - 20;
-        const hh = 20 + h(i) * 40;
-        const y = 60 + h(i, 1) * 80 - camY * 0.2;
-        r.fillRect(x, y, 6, hh, '#8a8a9a');
-        r.fillRect(x + 2, y - 4, 2, hh + 4, '#c8c4b8');
-      }
-      for (let i = 0; i < 24; i++) {
-        const x = ((i * 43 - camX * 0.55) % (VIEW_W + 40) + VIEW_W + 40) % (VIEW_W + 40) - 20;
-        const y = 100 + h(i, 2) * 70 - camY * 0.4;
-        r.fillRect(x, y, 10, 60, '#5a5a6a');
-        r.fillRect(x + 3, y - 3, 3, 63, '#9a968a');
-      }
+      bands(r, ['#2a2836', '#302e3e', '#363446', '#3e3c50', '#46445a', '#504e64']);
+      tileX(r, crystalStrip('minas:far', 110, '#7a8aa8', 14, 41), camX, 0.25, Math.round(24 - camY * 0.2));
+      tileX(r, stalactiteStrip(), camX, 0.4, Math.round(-camY * 0.3));
+      tileX(r, crystalStrip('minas:near', 80, '#d8e4f4', 9, 43), camX, 0.55, Math.round(60 - camY * 0.4), 0, true);
       break;
     }
     case 'vale': {
-      r.gradient([[0, '#05060f'], [1, '#141830']]);
-      stars(r, camX, f, 40);
-      moonless(r);
-      trees(r, camX, 0.3, 120 - camY * 0.2, '#0f1a24', '#0a1218', 56);
-      trees(r, camX, 0.55, 150 - camY * 0.4, '#0a1018', '#05080c', 44);
-      // vaga-lumes
+      bands(r, ['#04050c', '#070912', '#0a0d1a', '#0d1222', '#10162a', '#141a32']);
+      stars(r, camX, f, 50);
+      ctx.globalAlpha = 0.07; r.circle(250, 32, 18, '#ffffff', false); ctx.globalAlpha = 1;
+      tileX(r, mountainsStrip('vale:mtn', 80, '#1a2236', '#2a3450', 4, 51), camX, 0.12, Math.round(34 - camY * 0.1));
+      tileX(r, forestStrip('vale:far', 90, '#16283a', '#0e1620', 9, 53, 9, 14), camX, 0.3, Math.round(38 - camY * 0.2));
+      tileX(r, forestStrip('vale:near', 80, '#0e1a26', '#080c12', 6, 57, 13, 19), camX, 0.55, Math.round(62 - camY * 0.4), 0, true);
       for (let i = 0; i < 16; i++) {
         const x = ((i * 59 + Math.sin((f + i * 30) / 50) * 10 - camX * 0.7) % VIEW_W + VIEW_W) % VIEW_W;
         const y = 60 + h(i, 3) * 100 + Math.sin((f + i * 17) / 37) * 6;
         const a = 0.4 + 0.6 * Math.abs(Math.sin((f + i * 23) / 30));
-        r.fillRect(x, y, 2, 2, `rgba(200,255,150,${a.toFixed(2)})`);
+        r.fillRect(x - 1, y - 1, 4, 4, `rgba(200,255,150,${(a * 0.25).toFixed(2)})`);
+        r.fillRect(x, y, 2, 2, `rgba(220,255,170,${a.toFixed(2)})`);
       }
       break;
     }
     case 'farol':
     case 'navio': {
-      r.gradient([[0, '#1a2440'], [0.7, '#3a4a70'], [1, '#6a7a9a']]);
-      stars(r, camX, f, 25);
-      clouds(r, camX, 0.15, 30, '#55658a', f);
-      // mar revolto
-      const seaY = 120 - camY * 0.15;
-      r.fillRect(0, seaY, VIEW_W, VIEW_H - seaY, '#1f3a5f');
-      for (let i = 0; i < 20; i++) {
-        const x = ((i * 31 - camX * 0.3 + f * 0.5) % (VIEW_W + 40)) - 20;
-        const y = seaY + 6 + (i % 4) * 12 + Math.sin((f + i * 10) / 20) * 2;
-        r.fillRect(x, y, 12, 1, '#6f829c');
+      bands(r, ['#141c34', '#1a2440', '#22304e', '#2a3a5c', '#34466a', '#3e5278', '#4a5e86']);
+      stars(r, camX, f, 25, 80);
+      cloudLayer(r, camX, 0.12, 14, '#4a5a80', f, 6, 4);
+      const seaY = Math.round(120 - camY * 0.15);
+      // farol mestre ao longe
+      const lh = getSprite(LIGHTHOUSE, false).frames[(f % 120) < 60 ? 1 : 0];
+      const lx = 236 - camX * 0.06;
+      ctx.globalAlpha = 0.8; ctx.drawImage(lh.img, Math.round(lx), seaY - 32, 12, 32); ctx.globalAlpha = 1;
+      if ((f % 120) < 60) {
+        ctx.globalAlpha = 0.12; ctx.fillStyle = '#fff4b0'; ctx.beginPath();
+        const a = f / 40, bx = lx + 6, by = seaY - 29;
+        ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(a) * 300, by + Math.sin(a) * 60 - 20); ctx.lineTo(bx + Math.cos(a) * 300, by + Math.sin(a) * 60 + 20); ctx.fill(); ctx.globalAlpha = 1;
       }
-      // farol mestre ao fundo
-      const lx = 240 - camX * 0.08;
-      r.fillRect(lx, seaY - 70, 14, 70, '#8a8f9e');
-      r.fillRect(lx, seaY - 70, 14, 8, '#c9ccd6');
-      r.fillRect(lx + 2, seaY - 66, 10, 6, (f % 120) < 60 ? '#ffe08a' : '#5a5f6e');
-      for (let i = 0; i < 4; i++) r.fillRect(lx, seaY - 60 + i * 16, 14, 4, '#c0392b');
+      sea(r, camX, seaY, ['#1f3a5f', '#1a3254', '#162a48'], '#6f829c', f);
+      for (let i = 0; i < 8; i++) {
+        const x = ((i * 47 - camX * 0.4 + f * 0.6) % (VIEW_W + 40)) - 20, y = seaY + 4 + (i % 3) * 10 + Math.sin((f + i * 10) / 20) * 2;
+        r.fillRect(x, y, 6, 2, '#a8b8d0');
+      }
       break;
     }
     case 'ceu': {
-      r.gradient([[0, '#1a1050'], [0.6, '#4a3a9a'], [1, '#ff9a8a']]);
-      stars(r, camX, f, 60);
-      clouds(r, camX, 0.3, 100 - camY * 0.3, '#ffd8e8', f);
-      clouds(r, camX, 0.5, 140 - camY * 0.5, '#ffffff', f + 500);
+      bands(r, ['#140c40', '#22164e', '#32205e', '#4a2e72', '#6a3e82', '#9a5088', '#ce6a88', '#f2908a']);
+      stars(r, camX, f, 60, 100);
+      tileX(r, hillsStrip('ceu:clouds1', 50, '#e8b8d8', '#ffe0f0', 6, 61, 16, 26), camX, 0.25, Math.round(108 - camY * 0.25));
+      tileX(r, hillsStrip('ceu:clouds2', 46, '#f4f0ff', '#ffffff', 5, 63, 18, 28), camX, 0.45, Math.round(138 - camY * 0.45), 0, true);
       break;
     }
     case 'forte': {
-      r.gradient([[0, '#1a1020'], [1, '#2a1a30']]);
-      // janelas góticas
+      bands(r, ['#140c1a', '#180f20', '#1c1226', '#20152c']);
+      tileX(r, castleWallStrip(), camX, 0.35, Math.round(-camY * 0.25));
       for (let i = 0; i < 6; i++) {
-        const x = ((i * 110 - camX * 0.3) % (VIEW_W + 60) + VIEW_W + 60) % (VIEW_W + 60) - 30;
-        const y = 40 - camY * 0.2;
-        r.fillRect(x, y, 16, 40, '#3a2a4a');
-        r.fillRect(x + 4, y + 4, 8, 28, (f + i * 20) % 90 < 45 ? '#6a4a8a' : '#5a3a7a');
-      }
-      // correntes
-      for (let i = 0; i < 8; i++) {
-        const x = ((i * 77 - camX * 0.5) % (VIEW_W + 60) + VIEW_W + 60) % (VIEW_W + 60) - 30;
-        for (let y = 0; y < VIEW_H; y += 6) r.fillRect(x + ((y / 6) % 2) * 2, y - camY * 0.4, 2, 4, '#4a3a5a');
+        const span = VIEW_W + 60, x = ((i * 77 - camX * 0.5) % span + span) % span - 30;
+        for (let y = 0; y < VIEW_H; y += 6) { r.fillRect(x + ((y / 6) % 2) * 2, y - camY * 0.4, 3, 4, '#3a2e48'); r.fillRect(x + ((y / 6) % 2) * 2, y - camY * 0.4, 1, 4, '#54466a'); }
       }
       break;
     }
@@ -175,99 +301,76 @@ export function drawBackground(r: Renderer, theme: Theme, camX: number, camY: nu
   if (o.night) r.dim(0.35, '#0a1030');
 }
 
-function sun(r: Renderer, x: number, y: number, c: string): void {
-  r.circle(x, y, 14, c, false);
-  r.circle(x, y, 10, '#ffffff', false);
-}
+// ------------------------------------------------------------------ faixas especiais
 
-function clouds(r: Renderer, camX: number, speed: number, baseY: number, color: string, f: number): void {
-  for (let i = 0; i < 7; i++) {
-    const w = 30 + h(i) * 40;
-    const x = ((i * 97 + h(i, 1) * 50 - camX * speed + f * 0.1) % (VIEW_W + 120) + VIEW_W + 120) % (VIEW_W + 120) - 60;
-    const y = baseY + h(i, 2) * 30;
-    r.fillRect(x, y + 4, w, 6, color);
-    r.fillRect(x + 6, y, w - 12, 5, color);
-    r.fillRect(x + 10, y - 3, w * 0.4, 4, color);
-  }
-}
-
-function hills(r: Renderer, camX: number, speed: number, baseY: number, color: string, period: number, amp: number, seed: number): void {
-  const c = r.ctx;
-  c.fillStyle = color;
-  c.beginPath();
-  c.moveTo(0, VIEW_H);
-  for (let x = 0; x <= VIEW_W; x += 4) {
-    const wx = x + camX * speed;
-    const y = baseY - (Math.sin(wx / period + seed) * amp + Math.sin(wx / (period * 0.37) + seed * 2) * amp * 0.3);
-    c.lineTo(x, y);
-  }
-  c.lineTo(VIEW_W, VIEW_H);
-  c.fill();
-}
-
-function palms(r: Renderer, camX: number, speed: number, baseY: number): void {
-  for (let i = 0; i < 5; i++) {
-    const x = ((i * 140 + h(i, 7) * 60 - camX * speed) % (VIEW_W + 80) + VIEW_W + 80) % (VIEW_W + 80) - 40;
-    const y = baseY - 10 + h(i, 8) * 10;
-    r.fillRect(x, y - 30, 3, 32, '#a8844a');
-    for (let k = -2; k <= 2; k++) r.fillRect(x - 10 + k * 5, y - 34 + Math.abs(k) * 2, 8, 3, '#4fa36a');
-  }
-}
-
-function trees(r: Renderer, camX: number, speed: number, baseY: number, c1: string, c2: string, hgt: number): void {
-  for (let i = 0; i < 9; i++) {
-    const x = ((i * 70 + h(i, 11) * 30 - camX * speed) % (VIEW_W + 80) + VIEW_W + 80) % (VIEW_W + 80) - 40;
-    const hh = hgt * (0.7 + h(i, 12) * 0.5);
-    r.fillRect(x + 8, baseY - hh * 0.4, 6, hh * 0.4 + 40, c2);
-    r.fillRect(x, baseY - hh, 22, hh * 0.65, c1);
-    r.fillRect(x + 4, baseY - hh - 8, 14, 10, c1);
-  }
-  r.fillRect(0, baseY + 30, VIEW_W, VIEW_H, c2);
-}
-
-function windmills(r: Renderer, camX: number, speed: number, baseY: number, f: number): void {
-  for (let i = 0; i < 3; i++) {
-    const x = ((i * 180 + 60 - camX * speed) % (VIEW_W + 100) + VIEW_W + 100) % (VIEW_W + 100) - 50;
-    const y = baseY - 10;
-    r.fillRect(x - 4, y - 30, 8, 30, '#d8d0c0');
-    r.fillRect(x - 6, y - 34, 12, 5, '#8a7a5a');
-    const c = r.ctx;
-    c.strokeStyle = '#f4f4f8';
-    c.lineWidth = 2;
-    for (let k = 0; k < 4; k++) {
-      const a = f / 90 + (k * Math.PI) / 2;
-      c.beginPath();
-      c.moveTo(x, y - 30);
-      c.lineTo(x + Math.cos(a) * 16, y - 30 + Math.sin(a) * 16);
-      c.stroke();
+function coralStrip(): Strip {
+  const mats = new Materials({ pink: '#f48ab8', gold: '#f2c070', mint: '#7ad8b0', sand: '#e8b880' });
+  return strip('recife:coral', W, 60, mats, (c) => {
+    c.rect(0, 50, W, 10, 'sand', 'vgrad');
+    for (let i = 0; i < 12; i++) {
+      const x = (i + h(i, 71) * 0.6) * (W / 12), hh = 10 + h(i, 72) * 18, m = ['pink', 'gold', 'mint'][i % 3];
+      wrap((dx) => {
+        c.line(x + dx, 52, x + dx, 52 - hh, m, 2, 3);
+        c.line(x + dx, 52 - hh * 0.5, x + dx - 7, 52 - hh * 0.8, m, 2, 2);
+        c.line(x + dx, 52 - hh * 0.4, x + dx + 6, 52 - hh * 0.75, m, 3, 2);
+        c.circle(x + dx, 52 - hh, 2.4, m, 'sphere');
+      });
     }
-  }
+  });
 }
-
-function corals(r: Renderer, camX: number, speed: number, baseY: number): void {
-  for (let i = 0; i < 12; i++) {
-    const x = ((i * 55 + h(i, 21) * 30 - camX * speed) % (VIEW_W + 60) + VIEW_W + 60) % (VIEW_W + 60) - 30;
-    const hh = 14 + h(i, 22) * 26;
-    const col = ['#f49ac1', '#f2c98a', '#8fd1b0'][i % 3];
-    r.fillRect(x, baseY - hh, 4, hh + 30, col);
-    r.fillRect(x - 3, baseY - hh + 6, 10, 3, col);
-    r.fillRect(x + 2, baseY - hh - 4, 3, 6, col);
-  }
-  r.fillRect(0, baseY + 20, VIEW_W, VIEW_H, '#143f6f');
+function kelpStrip(): Strip {
+  const mats = new Materials({ kelp: '#2a8a6a' }, '#103a4a');
+  return strip('recife:kelp', W, 110, mats, (c) => {
+    for (let i = 0; i < 9; i++) {
+      const x0 = (i + h(i, 81)) * (W / 9), top = 10 + h(i, 82) * 40;
+      wrap((dx) => {
+        for (let y = top; y < 110; y++) c.set(x0 + dx + Math.sin(y / 7 + i) * 2, y, 'kelp', 2).set(x0 + dx + 1 + Math.sin(y / 7 + i) * 2, y, 'kelp', 1);
+        for (let y = top + 6; y < 110; y += 10) c.ellipse(x0 + dx + 3 + Math.sin(y / 7 + i) * 2, y, 2.2, 1.2, 'kelp', 'sphere');
+      });
+    }
+  });
 }
-
-function stars(r: Renderer, camX: number, f: number, n: number): void {
-  for (let i = 0; i < n; i++) {
-    const x = ((i * 83 + h(i, 31) * 50 - camX * 0.05) % VIEW_W + VIEW_W) % VIEW_W;
-    const y = h(i, 32) * 120;
-    const tw = (f + i * 13) % 90 < 10 ? 2 : 1;
-    r.fillRect(x, y, tw, tw, '#ffffff');
-  }
+function crystalStrip(key: string, hgt: number, color: string, count: number, seed: number): Strip {
+  const mats = new Materials({ crystal: color, rock: '#3a3848' });
+  return strip(key, W, hgt, mats, (c) => {
+    c.rect(0, hgt - 10, W, 10, 'rock', 'vgrad');
+    for (let i = 0; i < count; i++) {
+      const x = (i + h(i, seed) * 0.7) * (W / count), hh = hgt * (0.3 + h(i, seed + 1) * 0.6), w = 4 + h(i, seed + 2) * 6;
+      const lean = (h(i, seed + 3) - 0.5) * 10;
+      wrap((dx) => {
+        c.poly([[x + dx - w / 2, hgt - 8], [x + dx + lean - w / 3, hgt - 8 - hh], [x + dx + lean, hgt - 12 - hh], [x + dx + lean + w / 3, hgt - 8 - hh], [x + dx + w / 2, hgt - 8]], 'crystal', 'cyl');
+        c.poly([[x + dx + 4, hgt - 8], [x + dx + 4 + lean * 0.5, hgt - 8 - hh * 0.5], [x + dx + 7 + lean * 0.5, hgt - 10 - hh * 0.5], [x + dx + 8, hgt - 8]], 'crystal', 'cyl', -1);
+      });
+    }
+  });
 }
-
-function moonless(r: Renderer): void {
-  // "Vale Sem Lua": só um halo onde a lua deveria estar
-  r.ctx.globalAlpha = 0.08;
-  r.circle(250, 30, 16, '#ffffff', false);
-  r.ctx.globalAlpha = 1;
+function stalactiteStrip(): Strip {
+  const mats = new Materials({ rock: '#4a4858', salt: '#c8d0dc' });
+  return strip('minas:stal', W, 60, mats, (c) => {
+    c.rect(0, 0, W, 8, 'rock', 'vgrad');
+    for (let i = 0; i < 14; i++) {
+      const x = (i + h(i, 91) * 0.7) * (W / 14), hh = 14 + h(i, 92) * 40, w = 3 + h(i, 93) * 5;
+      wrap((dx) => c.poly([[x + dx - w, 6], [x + dx + w, 6], [x + dx, 6 + hh]], i % 3 ? 'rock' : 'salt', 'cyl'));
+    }
+  });
+}
+function castleWallStrip(): Strip {
+  const mats = new Materials({ brick: '#3a2c4c', window: '#6a5aa8', glow: '#b8a8f0', banner: '#9a2a4a' }, '#0e0814');
+  return strip('forte:wall', W, 180, mats, (c) => {
+    for (let y = 0; y < 180; y++)
+      for (let x = 0; x < W; x++) {
+        const row = Math.floor(y / 8), off = row % 2 ? 8 : 0, bx = (x + off) % 16, by = y % 8;
+        c.set(x, y, 'brick', by === 7 || bx === 15 ? 0 : by === 0 || bx === 0 ? 2 : 1);
+      }
+    for (let i = 0; i < 3; i++) {
+      const x = 30 + i * 85;
+      c.rect(x, 40, 18, 46, 'window', 'vgrad', 0);
+      c.ellipse(x + 9, 40, 9, 9, 'window', 'vgrad');
+      c.line(x + 9, 32, x + 9, 85, 'brick', 0); c.line(x, 62, x + 17, 62, 'brick', 0);
+      c.rect(x + 2, 44, 5, 16, 'glow', 'flat', 0, 1);
+      // estandarte
+      c.rect(x + 48, 20, 12, 30, 'banner', 'cyl');
+      c.poly([[x + 48, 50], [x + 54, 56], [x + 60, 50]], 'banner', 'flat', -1);
+    }
+  }, false);
 }
