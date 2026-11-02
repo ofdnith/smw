@@ -239,7 +239,7 @@ export class WindBaron extends Boss {
   t = 0;
   baseY: number;
   constructor(x: number, y: number) {
-    super(x, y, 24, 24);
+    super(x, y, 26, 26);
     this.baseY = this.body.y - 64;
     this.body.y = this.baseY;
     this.body.noclip = true;

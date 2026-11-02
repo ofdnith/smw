@@ -57,42 +57,40 @@ function motherSlug(frame: number, floor: boolean): string {
   return G.toString();
 }
 
-// ---- Barão Cata-Vento (24x24)
-function baron(blade: number): string {
-  const G = g(24, 24);
-  // pás
-  const a0 = (blade * Math.PI) / 4;
+// ---- Barão Cata-Vento (28x28): moinho com quatro pás largas e um rosto no eixo
+function blades(G: ReturnType<typeof g>, a0: number): void {
   for (let i = 0; i < 4; i++) {
     const a = a0 + (i * Math.PI) / 2;
     const dx = Math.cos(a), dy = Math.sin(a);
-    for (let r = 4; r <= 11; r++) {
-      G.set(12 + dx * r, 12 + dy * r, 's');
-      G.set(12 + dx * r + -dy, 12 + dy * r + dx, 'S');
+    const nx = -dy, ny = dx;
+    for (let r = 4; r <= 13; r++) {
+      const wdt = r < 7 ? 1 : 2;
+      for (let k = -wdt; k <= wdt; k++) {
+        const edge = Math.abs(k) === wdt || r === 13;
+        G.set(14 + dx * r + nx * k, 14 + dy * r + ny * k, edge ? 'k' : k === 0 ? 'w' : 's');
+      }
     }
   }
-  // eixo / rosto
-  G.circle(12, 12, 4, 'b');
-  G.set(10, 11, 'e'); G.set(14, 11, 'e');
-  G.set(11, 14, 'k'); G.set(12, 14, 'k'); G.set(13, 14, 'k');
-  // chapéu
-  G.rect(9, 6, 7, 2, 'k');
-  G.rect(10, 4, 5, 2, 'k');
+}
+function baronHub(G: ReturnType<typeof g>, dizzy: boolean): void {
+  G.circle(14, 14, 5, 'b');
   G.outline();
+  G.set(12, 13, dizzy ? 'x' : 'e'); G.set(16, 13, dizzy ? 'x' : 'e');
+  G.rect(12, dizzy ? 17 : 16, 5, 1, 'k');
+  G.rect(11, 8, 7, 2, 'k');
+  G.rect(12, 6, 5, 2, 'k');
+  G.set(14, 9, 'y');
+}
+function baron(blade: number): string {
+  const G = g(28, 28);
+  blades(G, (blade * Math.PI) / 4);
+  baronHub(G, false);
   return G.toString();
 }
 function baronStopped(): string {
-  const G = g(24, 24);
-  for (let i = 0; i < 4; i++) {
-    const a = Math.PI / 4 + (i * Math.PI) / 2;
-    const dx = Math.cos(a), dy = Math.sin(a);
-    for (let r = 4; r <= 11; r++) G.set(12 + dx * r, 12 + dy * r, 's');
-  }
-  G.circle(12, 12, 4, 'b');
-  G.set(10, 11, 'x'); G.set(14, 11, 'x');
-  G.set(11, 14, 'k'); G.set(12, 14, 'k'); G.set(13, 14, 'k');
-  G.rect(9, 6, 7, 2, 'k');
-  G.rect(10, 4, 5, 2, 'k');
-  G.outline();
+  const G = g(28, 28);
+  blades(G, Math.PI / 4);
+  baronHub(G, true);
   return G.toString();
 }
 
@@ -197,7 +195,7 @@ function brumo(frame: number, mode: 'walk' | 'dash' | 'stun'): string {
 const BOSS_PAL = {
   kingcrab: { '.': null, k: '#2a1010', r: '#e8734a', R: '#b84b2a', p: '#f5b7c8', y: '#ffd24a', w: '#ffffff', d: '#8a6a4a' },
   motherslug: { '.': null, k: '#1a2a1a', g: '#7fbf5a', G: '#4f8a3a', m: '#a8d87a', e: '#ffffff' },
-  baron: { '.': null, k: '#2a2a3a', s: '#d8d0c0', S: '#a89880', b: '#8a7a5a', e: '#ffffff', x: '#ff6a6a' },
+  baron: { '.': null, k: '#2a2a3a', s: '#d8d0c0', S: '#a89880', w: '#f4f0e8', b: '#8a7a5a', e: '#ffffff', x: '#ff6a6a', y: '#ffd24a' },
   medusa: { '.': null, k: '#2a3a5a', K: '#5a7aaa', j: '#6a7fb0', J: '#4a5f90', w: '#dfe8ff', W: '#bfe3ff', e: '#ffffff' },
   drill: { '.': null, k: '#2a1a1a', m: '#8a8a9a', M: '#5a5a6a', d: '#c0c0d0', D: '#808090', b: '#8a6a5a', e: '#1b1b2f', x: '#ff6a6a', p: '#f5a8a0', y: '#ffd24a', w: '#ffffff' },
   shadow: { '.': null, k: '#141428', w: '#3a3a5a', e: '#ff5a5a' },

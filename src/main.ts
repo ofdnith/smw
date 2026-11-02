@@ -9,6 +9,7 @@ import { PHYS } from './game/entities/player';
 import { sequencer } from './engine/audio/sequencer';
 import { MUSIC } from './content/music';
 import { sfx } from './engine/audio/sfx';
+import { ArtPreviewScene } from './tools/artpreview';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const game = new Game(canvas);
@@ -44,6 +45,11 @@ const lv = params.get('level');
 if (lv && LEVELS[lv]) {
   if (params.get('debug')) game.debug = true;
   game.push(new LevelScene(LEVELS[lv], game));
+} else if (params.has('art')) {
+  const sc = new ArtPreviewScene();
+  sc.page = parseInt(params.get('art') ?? '0', 10) || 0;
+  window.addEventListener('keydown', (e) => { if (e.code === 'ArrowRight') sc.page++; if (e.code === 'ArrowLeft') sc.page = Math.max(0, sc.page - 1); });
+  game.push(sc);
 } else if (params.has('map')) {
   if (!game.slot.flags.includes('intro')) game.slot.flags.push('intro');
   // ?cleared=1-1,1-2 marca fases como concluídas (dev)
