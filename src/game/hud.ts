@@ -6,11 +6,22 @@ import type { LevelDef } from './level/format';
 import { ITEMS } from '../content/art/items';
 import { LUMI, LUMI_PALETTE } from '../content/art/lumi';
 import { PHYS } from './entities/player';
+import { formatTime } from '../engine/save';
+
+export interface TimerHud {
+  time: number;
+  best?: number;
+  record: boolean;
+}
 
 const HUD_ICON = { palette: LUMI_PALETTE, frames: [LUMI.idle[0]] };
 
-export function drawHud(r: Renderer, w: World, level: LevelDef, game: Game): void {
+export function drawHud(r: Renderer, w: World, level: LevelDef, game: Game, timer?: TimerHud): void {
   const run = w.run;
+  if (timer) {
+    drawTimerHud(r, w, level, timer);
+    return;
+  }
   // vidas
   r.drawSprite(HUD_ICON, 0, 6, 2, false, false);
   r.text(`x${run.lives}`, 24, 10, '#ffffff', 'left', '#000000');
@@ -74,7 +85,24 @@ export function drawHud(r: Renderer, w: World, level: LevelDef, game: Game): voi
       r.text(`AMBAR ${run.amber}`, VIEW_W / 2, y + 18, '#ffffff', 'center');
       const pearls = [0, 1, 2].filter((i) => ((run.pearlsThisLevel | run.pearlsSaved) & (1 << i)) !== 0).length;
       r.text(`PEROLAS ${pearls}/3`, VIEW_W / 2, y + 28, '#dff6ff', 'center');
-      if (game.slot.cleared.includes(level.id) === false && t > 120) r.text('NOVO CAMINHO!', VIEW_W / 2, y + 38, '#9cf29c', 'center');
+      if (!game.slot.cleared.includes(level.id) && t > 120) r.text('NOVO CAMINHO!', VIEW_W / 2, y + 38, '#9cf29c', 'center');
+    }
+  }
+}
+
+/** HUD do contra-relógio: só o tempo, o recorde e o resultado. */
+function drawTimerHud(r: Renderer, w: World, level: LevelDef, timer: TimerHud): void {
+  r.box(VIEW_W / 2 - 56, 3, 112, 22, 'rgba(10,20,40,0.75)', '#ffd24a');
+  r.text(formatTime(timer.time), VIEW_W / 2, 6, '#ffffff', 'center');
+  r.text(timer.best !== undefined ? `RECORDE ${formatTime(timer.best)}` : 'SEM RECORDE', VIEW_W / 2, 15, '#9fb3c8', 'center');
+  r.text(level.name, 6, 6, '#ffd24a', 'left', '#000000');
+  if (w.event === 'goal' || w.event === 'secret') {
+    const t = w.eventTimer;
+    if (t > 30) {
+      r.box(VIEW_W / 2 - 70, 50, 140, 40);
+      r.text('TEMPO', VIEW_W / 2, 56, '#ffd24a', 'center');
+      r.text(formatTime(timer.time), VIEW_W / 2, 67, '#ffffff', 'center');
+      if (timer.record && (t / 10) % 2 < 1.4) r.text('NOVO RECORDE!', VIEW_W / 2, 78, '#9cf29c', 'center');
     }
   }
 }

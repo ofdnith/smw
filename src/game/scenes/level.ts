@@ -28,20 +28,30 @@ export class LevelScene implements Scene {
   onFinish: ((result: 'goal' | 'secret' | 'died') => void) | null = null;
   musicStarted = false;
   returnToMap = true;
+  /** contra-relógio: não toca no arquivo; morrer reinicia do começo; o tempo vira recorde */
+  readonly timeAttack: boolean;
+  finalTime = -1;
+  newRecord = false;
 
-  constructor(level: LevelDef, game: Game, checkpoint: { room: number; x: number; y: number } | null = null) {
+  constructor(level: LevelDef, game: Game, checkpoint: { room: number; x: number; y: number } | null = null, opts: { timeAttack?: boolean } = {}) {
     this.level = level;
-    const slot = game.slot;
-    this.run = {
-      lives: slot.lives,
-      amber: slot.amber,
-      power: slot.power,
-      reserve: slot.reserve,
-      hasBolota: slot.hasBolota,
-      pearlsThisLevel: 0,
-      pearlsSaved: slot.pearls[level.id] ?? 0,
-      assist: game.save.settings.assist,
-    };
+    this.timeAttack = opts.timeAttack ?? false;
+    if (this.timeAttack) {
+      this.run = { lives: 9, amber: 0, power: 'none', reserve: 'none', hasBolota: false, pearlsThisLevel: 0, pearlsSaved: 0, assist: false };
+      checkpoint = null;
+    } else {
+      const slot = game.slot;
+      this.run = {
+        lives: slot.lives,
+        amber: slot.amber,
+        power: slot.power,
+        reserve: slot.reserve,
+        hasBolota: slot.hasBolota,
+        pearlsThisLevel: 0,
+        pearlsSaved: slot.pearls[level.id] ?? 0,
+        assist: game.save.settings.assist,
+      };
+    }
     this.checkpoint = checkpoint;
     this.world = new World(level, this.run, checkpoint, game.seed + level.id.length);
     this.world.player.power = this.run.power as 'none';
@@ -85,7 +95,46 @@ export class LevelScene implements Scene {
     if (w.event !== 'none') this.handleEvent(game);
   }
 
+  /** Sai do contra-relógio de volta para a lista de fases. */
+  leaveTimeAttack(game: Game): void {
+    game.stopMusic();
+    game.transitionTo(() => { game.pop(); game.top?.onEnter?.(game); }, 'fade');
+  }
+
+  /** Recomeça a mesma fase no contra-relógio. */
+  restartTimeAttack(game: Game): void {
+    game.transitionTo(() => { game.pop(); game.push(new LevelScene(this.level, game, null, { timeAttack: true })); }, 'fade');
+  }
+
+  private handleTimeAttack(game: Game): void {
+    const w = this.world;
+    if (w.event === 'died') {
+      if (w.eventTimer === 1) sequencer.stop(0.2);
+      if (w.eventTimer === 50) {
+        this.onFinish?.('died');
+        game.transitionTo(() => { game.pop(); game.push(new LevelScene(this.level, game, null, { timeAttack: true })); }, 'iris', w.player.cx - w.camX, w.player.cy - w.camY);
+      }
+      return;
+    }
+    if (w.eventTimer === 1) {
+      this.finalTime = w.time;
+      const best = game.save.records[this.level.id];
+      if (best === undefined || this.finalTime < best) {
+        game.save.records[this.level.id] = this.finalTime;
+        this.newRecord = true;
+        game.persist();
+      }
+      sequencer.stop(0.4);
+    }
+    if (w.eventTimer === 40) sequencer.play(MUSIC.vitoria);
+    if (w.eventTimer === 220) {
+      this.onFinish?.(w.event === 'secret' ? 'secret' : 'goal');
+      this.leaveTimeAttack(game);
+    }
+  }
+
   private handleEvent(game: Game): void {
+    if (this.timeAttack) { this.handleTimeAttack(game); return; }
     const w = this.world;
     const slot = game.slot;
     if (w.event === 'died') {
@@ -196,7 +245,7 @@ export class LevelScene implements Scene {
     // popups
     for (const p of w.popups) r.text(p.text, p.x - camX, p.y - camY - (50 - p.life) * 0.4, p.color, 'center', '#000000');
 
-    drawHud(r, w, this.level, game);
+    drawHud(r, w, this.level, game, this.timeAttack ? { time: this.finalTime >= 0 ? this.finalTime : w.time, best: game.save.records[this.level.id], record: this.newRecord } : undefined);
 
     if (game.debug) this.drawDebug(r, game);
   }

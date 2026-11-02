@@ -2,6 +2,7 @@
 import { Game } from './game/game';
 import { TitleScene } from './game/scenes/title';
 import { LevelScene } from './game/scenes/level';
+import { TimeAttackScene } from './game/scenes/extras';
 import { WorldMapScene } from './game/scenes/worldmap';
 import { synth } from './engine/audio/synth';
 import { LEVELS } from './content/levels';
@@ -44,7 +45,12 @@ window.addEventListener('keydown', (e) => {
 // ?level=1-1 abre direto uma fase (dev/testes); ?map abre o mapa
 const params = new URLSearchParams(location.search);
 const lv = params.get('level');
-if (lv && LEVELS[lv]) {
+const ta = params.get('ta');
+if (ta && LEVELS[ta]) {
+  // ?ta=1-1 abre direto o contra-relógio da fase (dev/testes), sobre a lista de fases
+  game.push(new TimeAttackScene(game));
+  game.push(new LevelScene(LEVELS[ta], game, null, { timeAttack: true }));
+} else if (lv && LEVELS[lv]) {
   if (params.get('debug')) game.debug = true;
   game.push(new LevelScene(LEVELS[lv], game));
 } else if (params.has('art')) {

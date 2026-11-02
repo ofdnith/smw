@@ -297,6 +297,93 @@ export const MUSIC: Record<string, Song> = {
   },
 };
 
-MUSIC.navio = { ...MUSIC.farol, name: 'navio' };
-MUSIC.caverna = { ...MUSIC.recife, name: 'caverna', bpm: 90 };
-MUSIC.bonus = { ...MUSIC.titulo, name: 'bonus' };
+// ---------------------------------------------------------------- faixas da expansão
+
+/** Navio-Fantasma: cantiga de marujo em ré menor, balanço de 6/8 escrito em semicolcheias. */
+MUSIC.navio = {
+  name: 'navio',
+  bpm: 118,
+  channels: [
+    ch(LEAD, [
+      'D5 - - A4 - - D5 - F5 - - - E5 - D5 -', 'C5 - - A4 - - F4 - A4 - - - - - - -',
+      'D5 - - A4 - - D5 - F5 - - - G5 - A5 -', 'E5 - - - C5 - - - A4 - - - - - - -',
+      'A5 - - G5 - - F5 - E5 - - - F5 - G5 -', 'F5 - - E5 - - D5 - C5 - - - A4 - - -',
+      'Bb4 - - D5 - - F5 - E5 - - - C5 - E5 -', 'D5 - - - - - - - . . . . . . . .',
+    ].join(' | ')),
+    ch(ARP, [
+      '. F4 A4 . . F4 A4 . . F4 A4 . . F4 A4 .', '. A4 C5 . . A4 C5 . . A4 C5 . . A4 C5 .',
+      '. F4 A4 . . F4 A4 . . F4 A4 . . F4 A4 .', '. E4 A4 . . E4 A4 . . E4 A4 . . E4 A4 .',
+      '. F4 A4 . . F4 A4 . . E4 G4 . . E4 G4 .', '. F4 Bb4 . . F4 Bb4 . . F4 A4 . . F4 A4 .',
+      '. G4 Bb4 . . G4 Bb4 . . E4 A4 . . E4 A4 .', '. F4 A4 . . F4 A4 . . . . . . . . .',
+    ].join(' | ')),
+    ch(BASS, [
+      'D3 . . A2 . . D3 . D3 . . A2 . . D3 .', 'F2 . . C3 . . F2 . F2 . . C3 . . F2 .',
+      'D3 . . A2 . . D3 . D3 . . A2 . . D3 .', 'A2 . . E3 . . A2 . A2 . . E3 . . A2 .',
+      'D3 . . A2 . . D3 . C3 . . G2 . . C3 .', 'Bb2 . . F2 . . Bb2 . F2 . . C3 . . F2 .',
+      'G2 . . D3 . . G2 . A2 . . E3 . . A2 .', 'D3 . . A2 . . D3 . D3 . . . . . . .',
+    ].join(' | ')),
+    drums(x('k . . h . . s . . h . . k . s .', 8)),
+    drums(x(D_RIDE, 8), { layer: 'ride', vol: 0.7 }),
+  ],
+};
+
+/** Cavernas e grutas: sinos esparsos com eco, pad grave e gotas. */
+MUSIC.caverna = {
+  name: 'caverna',
+  bpm: 84,
+  channels: [
+    ch(BELLV, [
+      'E5 - - - . . . . A5 - - - . . . .', 'G5 - - - E5 - - - D5 - - - - - - -',
+      'C5 - - - . . . . E5 - - - . . . .', 'D5 - - - B4 - - - G4 - - - - - - -',
+      'A4 - - - . . . . C5 - - - . . E5 -', 'F5 - - - E5 - - - C5 - - - - - - -',
+      'D5 - - - E5 - - - B4 - - - E4 - - -', 'A4 - - - - - - - - - - - - - - -',
+    ].join(' | ')),
+    ch(BELLV, [
+      '. . E5 - - - . . . . A5 - - - . .', '. . G5 - - - E5 - - - D5 - - - - -',
+      '. . C5 - - - . . . . E5 - - - . .', '. . D5 - - - B4 - - - G4 - - - - -',
+      '. . A4 - - - . . . . C5 - - - . .', '. . F5 - - - E5 - - - C5 - - - - -',
+      '. . D5 - - - E5 - - - B4 - - - E4 -', '. . A4 - - - - - - - - - - - - -',
+    ].join(' | '), { vol: 0.35 }),
+    ch(PAD, 'A3 - - - - - - - - - - - - - - - | E3 - - - - - - - - - - - - - - - | C4 - - - - - - - - - - - - - - - | G3 - - - - - - - - - - - - - - - | A3 - - - - - - - - - - - - - - - | F3 - - - - - - - - - - - - - - - | D3 - - - - - - - E3 - - - - - - - | A3 - - - - - - - - - - - - - - -'),
+    ch(BASS, 'A2 - - - - - - - . . . . . . . . | E2 - - - - - - - . . . . . . . . | C3 - - - - - - - . . . . . . . . | G2 - - - - - - - . . . . . . . . | A2 - - - - - - - . . . . . . . . | F2 - - - - - - - . . . . . . . . | D2 - - - - - - - E2 - - - - - - - | A2 - - - - - - - . . . . . . . .'),
+    drums(x('r . . . . . . . . . r . . . . .', 8), { vol: 0.6 }),
+    drums(x(D_RIDE, 8), { layer: 'ride', vol: 0.5 }),
+  ],
+};
+
+/** Cassino de Conchas: valsinha de quiosque em fá maior. */
+MUSIC.cassino = {
+  name: 'cassino',
+  bpm: 144,
+  channels: [
+    ch(LEAD_SQ, [
+      'F5 . A5 . C6 . A5 . G5 . E5 . C5 . . .', 'D5 . F5 . A5 . F5 . E5 - - - . . . .',
+      'F5 . A5 . C6 . D6 . C6 . A5 . F5 . . .', 'G5 . A5 . G5 . E5 . F5 - - - . . . .',
+      'Bb5 . A5 . G5 . F5 . A5 . G5 . F5 . E5 .', 'F5 . E5 . D5 . C5 . D5 - - - . . . .',
+      'C5 . D5 . E5 . F5 . G5 . A5 . Bb5 . G5 .', 'F5 - - - C5 - - - F5 - - - . . . .',
+    ].join(' | ')),
+    ch(ARP, [
+      '. A4 . C5 . A4 . C5 . A4 . C5 . A4 . C5', '. F4 . A4 . F4 . A4 . F4 . A4 . F4 . A4',
+      '. A4 . C5 . A4 . C5 . A4 . C5 . A4 . C5', '. E4 . G4 . E4 . G4 . E4 . G4 . E4 . G4',
+      '. D4 . F4 . D4 . F4 . D4 . F4 . D4 . F4', '. A4 . C5 . A4 . C5 . F4 . A4 . F4 . A4',
+      '. E4 . G4 . E4 . G4 . E4 . G4 . E4 . G4', '. A4 . C5 . A4 . C5 . A4 . . . . . .',
+    ].join(' | ')),
+    ch(BASS, [
+      'F2 . C3 . F2 . C3 . F2 . C3 . F2 . C3 .', 'D3 . A2 . D3 . A2 . D3 . A2 . D3 . A2 .',
+      'F2 . C3 . F2 . C3 . F2 . C3 . F2 . C3 .', 'C3 . G2 . C3 . G2 . C3 . G2 . C3 . G2 .',
+      'Bb2 . F2 . Bb2 . F2 . Bb2 . F2 . Bb2 . F2 .', 'F2 . C3 . F2 . C3 . D3 . A2 . D3 . A2 .',
+      'C3 . G2 . C3 . G2 . C3 . G2 . C3 . G2 .', 'F2 . C3 . F2 . C3 . F2 . . . . . . .',
+    ].join(' | ')),
+    drums(x('k . h . s . h . k . h . s . h h', 8)),
+  ],
+};
+MUSIC.bonus = { ...MUSIC.cassino, name: 'bonus' };
+
+/** Nomes das faixas na Sala de Som, na ordem em que aparecem. */
+export const TRACK_TITLES: [string, string][] = [
+  ['titulo', 'O FAROL ACORDA'], ['mapa', 'O ARQUIPELAGO'], ['praia', 'PRAIA DO SINO'], ['bosque', 'BOSQUE ENCHARCADO'],
+  ['penhasco', 'PENHASCO DOS VENTOS'], ['recife', 'RECIFE PROFUNDO'], ['caverna', 'GRUTAS'], ['minas', 'MINAS DE SAL'],
+  ['vale', 'VALE SEM LUA'], ['navio', 'NAVIO-FANTASMA'], ['farol', 'FAROL MESTRE'], ['ceu', 'ROTA DAS CONSTELACOES'],
+  ['forte', 'FORTES DA NEVOA'], ['chefe', 'GUARDIAO DO FAROL'], ['chefefinal', 'CAPITAO BRUMO'], ['cassino', 'CASSINO DE CONCHAS'],
+  ['vitoria', 'FAROL A VISTA'], ['gameover', 'A NEVOA VENCEU'], ['creditos', 'LUZ NO HORIZONTE'],
+];

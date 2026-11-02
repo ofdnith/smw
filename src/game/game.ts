@@ -57,6 +57,7 @@ export class Game {
   applySettings(): void {
     synth.setMusicVolume(this.save.settings.music / 10);
     synth.setSfxVolume(this.save.settings.sfx / 10);
+    this.input.applyBindings(this.save.settings.keys, this.save.settings.pad);
     const touch = document.getElementById('touch');
     if (touch) touch.classList.toggle('on', this.save.settings.touch);
   }

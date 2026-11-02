@@ -7,6 +7,8 @@ import { sfx } from '../../engine/audio/sfx';
 import { Rng } from '../../engine/rng';
 import type { Game, Scene } from '../game';
 import { ITEMS } from '../../content/art/items';
+import { sequencer } from '../../engine/audio/sequencer';
+import { MUSIC } from '../../content/music';
 
 export const CASINO_COST = 10;
 export const CASINO_MISSES = 4;
@@ -45,6 +47,13 @@ export class CasinoScene implements Scene {
     this.cards = dealCards(seed);
     this.open = this.cards.map(() => false);
     this.matched = this.cards.map(() => false);
+  }
+
+  onEnter(): void {
+    sequencer.play(MUSIC.cassino);
+  }
+  onExit(): void {
+    sequencer.play(MUSIC.mapa);
   }
 
   update(game: Game): void {

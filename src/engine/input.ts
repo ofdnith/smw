@@ -21,6 +21,51 @@ export const DEFAULT_KEYMAP: KeyMap = {
   KeyV: 'item', KeyI: 'item',
 };
 
+/** Ações que o jogador pode remapear (direções ficam fixas: setas/WASD e direcional). */
+export const REMAPPABLE: Action[] = ['jump', 'run', 'spin', 'item', 'pause'];
+
+export type PadMap = Record<Action, number[]>;
+export const DEFAULT_PADMAP: PadMap = {
+  left: [14], right: [15], up: [12], down: [13],
+  jump: [0], run: [2, 3, 4, 5, 6, 7], spin: [1], pause: [9], item: [8],
+};
+
+/** Nome legível de uma tecla (KeyboardEvent.code). */
+export function keyLabel(code: string | undefined): string {
+  if (!code) return '-';
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  if (code.startsWith('Numpad')) return 'NUM ' + code.slice(6).toUpperCase();
+  const names: Record<string, string> = {
+    Space: 'ESPACO', Enter: 'ENTER', Escape: 'ESC', ShiftLeft: 'SHIFT', ShiftRight: 'SHIFT DIR', ControlLeft: 'CTRL', ControlRight: 'CTRL DIR',
+    AltLeft: 'ALT', AltRight: 'ALT DIR', Tab: 'TAB', Backspace: 'APAGAR', ArrowLeft: 'SETA ESQ', ArrowRight: 'SETA DIR', ArrowUp: 'SETA CIMA', ArrowDown: 'SETA BAIXO',
+    Comma: 'VIRGULA', Period: 'PONTO', Slash: 'BARRA', Semicolon: 'PONTO E VIRGULA', MetaLeft: 'CMD', MetaRight: 'CMD DIR',
+  };
+  return names[code] ?? code.toUpperCase();
+}
+
+/** Monta o mapa de teclas: padrão + escolhas do jogador (a escolha rouba a tecla de outra ação). */
+export function buildKeymap(custom: Partial<Record<Action, string>>): KeyMap {
+  const km: KeyMap = { ...DEFAULT_KEYMAP };
+  for (const a of REMAPPABLE) {
+    const code = custom[a];
+    if (code) km[code] = a;
+  }
+  return km;
+}
+
+/** Monta o mapa de botões: um botão escolhido substitui os padrões da ação e sai das outras. */
+export function buildPadmap(custom: Partial<Record<Action, number>>): PadMap {
+  const pm: PadMap = Object.fromEntries(ACTIONS.map((a) => [a, [...DEFAULT_PADMAP[a]]])) as PadMap;
+  for (const a of REMAPPABLE) {
+    const b = custom[a];
+    if (b === undefined) continue;
+    for (const other of ACTIONS) pm[other] = pm[other].filter((x) => x !== b);
+    pm[a] = [b];
+  }
+  return pm;
+}
+
 /** Estado de entrada de um frame, como máscara de bits (serializável para replays). */
 export class InputState {
   held = 0;
@@ -36,6 +81,9 @@ export class InputState {
 export class Input {
   readonly state = new InputState();
   keymap: KeyMap = { ...DEFAULT_KEYMAP };
+  padmap: PadMap = buildPadmap({});
+  /** última tecla apertada (para a tela de remapeamento) */
+  lastKey: string | null = null;
   private keysDown = new Set<string>();
   private touchDown = new Set<Action>();
   /** Quando definido, substitui a entrada real (replays/testes). */
@@ -50,6 +98,7 @@ export class Input {
     target.addEventListener('keydown', (e) => {
       if (this.keymap[e.code] !== undefined || e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
       this.keysDown.add(e.code);
+      if (!e.repeat) this.lastKey = e.code;
     });
     target.addEventListener('keyup', (e) => this.keysDown.delete(e.code));
     target.addEventListener('blur', () => this.keysDown.clear());
@@ -85,19 +134,29 @@ export class Input {
       const b = (i: number): boolean => !!gp.buttons[i] && gp.buttons[i].pressed;
       const ax = gp.axes[0] ?? 0, ay = gp.axes[1] ?? 0;
       let m = 0;
-      if (b(14) || ax < -0.5) m |= ACTION_BIT.left;
-      if (b(15) || ax > 0.5) m |= ACTION_BIT.right;
-      if (b(12) || ay < -0.5) m |= ACTION_BIT.up;
-      if (b(13) || ay > 0.5) m |= ACTION_BIT.down;
-      if (b(0)) m |= ACTION_BIT.jump; // A / Cruz
-      if (b(2) || b(3) || b(6) || b(7) || b(4) || b(5)) m |= ACTION_BIT.run; // X / Quadrado / gatilhos / ombros
-      if (b(1)) m |= ACTION_BIT.spin; // B / Círculo
-      if (b(9)) m |= ACTION_BIT.pause;
-      if (b(8)) m |= ACTION_BIT.item;
+      if (ax < -0.5) m |= ACTION_BIT.left;
+      if (ax > 0.5) m |= ACTION_BIT.right;
+      if (ay < -0.5) m |= ACTION_BIT.up;
+      if (ay > 0.5) m |= ACTION_BIT.down;
+      for (const a of ACTIONS) if (this.padmap[a].some(b)) m |= ACTION_BIT[a];
       if (m) this.anyGamepadActivity = true;
       mask |= m;
     }
     return mask;
+  }
+
+  /** Aplica as escolhas do jogador. */
+  applyBindings(keys: Partial<Record<Action, string>>, pad: Partial<Record<Action, number>>): void {
+    this.keymap = buildKeymap(keys);
+    this.padmap = buildPadmap(pad);
+  }
+
+  /** Botões de controle apertados agora (para a tela de remapeamento). */
+  padButtonsDown(): number[] {
+    const out: number[] = [];
+    const pads = typeof navigator !== 'undefined' && navigator.getGamepads ? navigator.getGamepads() : [];
+    for (const gp of pads) if (gp) gp.buttons.forEach((bt, i) => { if (bt.pressed && i < 12) out.push(i); });
+    return out;
   }
 
   /** Chamado uma vez por frame de lógica. */

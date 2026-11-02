@@ -13,6 +13,8 @@ import { newSlot, slotProgress } from '../../engine/save';
 import { WorldMapScene } from './worldmap';
 import { LEVELS } from '../../content/levels';
 import { CreditsScene } from './credits';
+import { ExtrasScene } from './extras';
+import { OptionsScene } from './options';
 
 export class TitleScene implements Scene {
   t = 0;
@@ -70,7 +72,7 @@ export class TitleScene implements Scene {
     r.ctx.fill();
     r.ctx.globalAlpha = 1;
     if (Math.floor(this.t / 30) % 2 === 0 && this.t > 20) r.text('APERTE UM BOTAO', VIEW_W / 2, VIEW_H - 16, '#ffffff', 'center', '#000000');
-    r.text('V1.0', 4, VIEW_H - 9, 'rgba(0,0,0,0.5)');
+    r.text('V1.1', 4, VIEW_H - 9, 'rgba(0,0,0,0.5)');
   }
 }
 
@@ -96,16 +98,20 @@ export class FileSelectScene implements Scene {
       }
       return;
     }
-    if (inp.isPressed('down')) { this.index = (this.index + 1) % 4; sfx('menu'); }
-    if (inp.isPressed('up')) { this.index = (this.index + 3) % 4; sfx('menu'); }
+    // 0-2: arquivos; 3-5: EXTRAS / OPCOES / CREDITOS (na mesma linha)
+    if (inp.isPressed('down')) { this.index = this.index < 3 ? this.index + 1 : 0; sfx('menu'); }
+    if (inp.isPressed('up')) { this.index = this.index === 0 ? 3 : this.index >= 3 ? 2 : this.index - 1; sfx('menu'); }
+    if (this.index >= 3 && inp.isPressed('right')) { this.index = this.index === 5 ? 3 : this.index + 1; sfx('menu'); }
+    if (this.index >= 3 && inp.isPressed('left')) { this.index = this.index === 3 ? 5 : this.index - 1; sfx('menu'); }
     if (inp.isPressed('spin') && this.index < 3 && game.save.slots[this.index]) {
       this.confirmDelete = this.index;
       sfx('menu');
     }
     if (inp.isPressed('jump') || inp.isPressed('pause')) {
-      if (this.index === 3) {
+      if (this.index >= 3) {
         sfx('select');
-        game.transitionTo(() => game.push(new CreditsScene(() => game.pop())), 'fade');
+        const next = this.index === 3 ? new ExtrasScene() : this.index === 4 ? new OptionsScene() : new CreditsScene(() => game.pop());
+        game.transitionTo(() => game.push(next), 'fade');
         return;
       }
       sfx('select');
@@ -136,7 +142,10 @@ export class FileSelectScene implements Scene {
       } else r.text('NOVA AVENTURA', 48, y + 15, '#9fb3c8');
     }
     const ySel = 34 + 3 * 34;
-    r.text(this.index === 3 ? '> CREDITOS' : '  CREDITOS', 48, ySel + 2, this.index === 3 ? '#ffffff' : '#c9ccd6');
+    ['EXTRAS', 'OPCOES', 'CREDITOS'].forEach((label, k) => {
+      const sel = this.index === 3 + k;
+      r.text((sel ? '> ' : '  ') + label, 48 + k * 80, ySel + 2, sel ? '#ffffff' : '#c9ccd6');
+    });
     r.text('Z/A: ESCOLHER   C/B: APAGAR', VIEW_W / 2, VIEW_H - 12, 'rgba(255,255,255,0.6)', 'center');
     if (this.confirmDelete >= 0) {
       r.dim(0.6);
