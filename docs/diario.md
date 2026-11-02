@@ -38,4 +38,4 @@ Com autonomia total, os marcos foram executados em sequência, direto na `main` 
 - Sensação do pulo/corrida (só é possível julgar jogando).
 - Mixagem da trilha (volumes relativos entre canais).
 - Mais decoração nas arenas de chefe.
-- Empacotamento nativo para Mac (M10, opcional).
+- Empacotamento nativo para Mac (M10): configuração Tauri + workflow `mac.yml` prontos, mas só podem ser executados num runner macOS (não verificado aqui).

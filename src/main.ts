@@ -10,6 +10,8 @@ import { sequencer } from './engine/audio/sequencer';
 import { MUSIC } from './content/music';
 import { sfx } from './engine/audio/sfx';
 import { ArtPreviewScene } from './tools/artpreview';
+import { getSprite } from './engine/sprites';
+import { LUMI, LUMI_PALETTE } from './content/art/lumi';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const game = new Game(canvas);
@@ -67,6 +69,7 @@ const w = window as unknown as { __game: Game; __step: (n: number, mask: (frame:
 w.__game = game;
 (game as unknown as { levelIds: string[] }).levelIds = Object.keys(LEVELS);
 (window as unknown as { __audio: unknown }).__audio = { synth, sequencer, MUSIC, sfx };
+(window as unknown as { __lumiFrame: () => CanvasImageSource }).__lumiFrame = () => getSprite({ palette: LUMI_PALETTE, frames: LUMI.victory }).frames[0].img;
 w.__step = (n, mask) => {
   game.input.override = mask;
   for (let i = 0; i < n; i++) game.update();
