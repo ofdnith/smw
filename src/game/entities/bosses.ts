@@ -1,4 +1,5 @@
 /** Chefes: um por farol, mais o Capitão Brumo. */
+import { VIEW_W } from '../../engine/renderer';
 import type { Renderer } from '../../engine/renderer';
 import { sfx } from '../../engine/audio/sfx';
 import { approach, tsin, tcos, clamp } from '../../engine/rng';
@@ -257,7 +258,7 @@ export class WindBaron extends Boss {
     this.spikyTop = this.spinning;
     this.hurts = this.spinning;
     if (this.spinning) {
-      b.x = world.camX + 160 + tsin(this.t / 240) * 100 - b.w / 2;
+      b.x = world.camX + VIEW_W / 2 + tsin(this.t / 240) * 88 - b.w / 2;
       b.y = this.baseY + tsin(this.t / 90) * 8;
       if (ph % 45 === 0) {
         // rajada: empurra Lumi
@@ -393,7 +394,7 @@ export class OldDrill extends Boss {
     if (this.state === 'hidden') {
       this.isEnemy = false;
       if (this.t > 60) {
-        b.x = clamp(p.cx - b.w / 2, world.camX + 16, world.camX + 320 - 16 - b.w);
+        b.x = clamp(p.cx - b.w / 2, world.camX + 16, world.camX + VIEW_W - 16 - b.w);
         b.y = world.h * TILE; // abaixo do chão
         this.state = 'warn';
         this.t = 0;
@@ -606,7 +607,7 @@ export class CaptainBrumo extends Boss {
           sfx('warp');
         }
         if (this.t === 40) {
-          b.x = clamp(p.cx - p.facing * 90 - b.w / 2, world.camX + 8, world.camX + 320 - 8 - b.w);
+          b.x = clamp(p.cx - p.facing * 90 - b.w / 2, world.camX + 8, world.camX + VIEW_W - 8 - b.w);
           b.y = p.y + p.h - b.h;
           this.facing = sign(p.cx - this.cx) || 1;
           world.poof(this.cx, this.cy, '#9fb3c8');

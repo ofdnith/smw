@@ -1,4 +1,7 @@
-/** Fonte bitmap 5x7 original, desenhada em texto. */
+/**
+ * Fonte bitmap original. Os glifos são desenhados em 5x7 e engrossados para 6x7 (traço de 2 px na
+ * vertical), com sombra escura embaixo e à direita: o visual de fonte de cartucho de 16 bits.
+ */
 import { compileFrame, type Frame } from './sprites';
 
 const GLYPHS: Record<string, string> = {
@@ -457,8 +460,20 @@ const ACCENTS: Record<string, string> = {
   Á: 'A', À: 'A', Â: 'A', Ã: 'A', É: 'E', Ê: 'E', Í: 'I', Ó: 'O', Ô: 'O', Õ: 'O', Ú: 'U', Ç: 'C',
 };
 
-export const FONT_W = 6; // 5 px + 1 de espaço
+export const FONT_W = 7; // 6 px de glifo + 1 de espaço
 export const FONT_H = 8;
+
+/** Engrossa um glifo 5x7: cada pixel aceso também acende o vizinho da direita. */
+function bold(text: string): string {
+  const rows = text.split('\n').filter((l) => l.length > 0);
+  return rows
+    .map((row) => {
+      let out = '';
+      for (let x = 0; x <= row.length; x++) out += row[x] === '#' || row[x - 1] === '#' ? '#' : '.';
+      return out;
+    })
+    .join('\n');
+}
 
 const glyphCache = new Map<string, Frame | null>();
 
@@ -469,7 +484,7 @@ export function glyph(ch: string, color: string): Frame | null {
   let up = ch.toUpperCase();
   if (ACCENTS[up]) up = ACCENTS[up];
   const text = GLYPHS[up] ?? GLYPHS[ch];
-  g = text ? compileFrame(text, { '#': color }) : null;
+  g = text ? compileFrame(bold(text), { '#': color }) : null;
   glyphCache.set(key, g);
   return g;
 }

@@ -47,10 +47,9 @@ function tileX(r: Renderer, f: Strip, camX: number, speed: number, y: number, dr
   for (let x = -off; x < VIEW_W; x += f.w) r.ctx.drawImage(f.img, Math.round(x), Math.round(y));
   if (fill && f.bottom && y + f.h < VIEW_H) r.fillRect(0, Math.round(y) + f.h, VIEW_W, VIEW_H, f.bottom);
 }
-/** Céu em faixas de cor (sem degradê suave, como no hardware de 16 bits). */
+/** Céu por linha de varredura (HDMA): degradê com os degraus de cor de 15 bits do console. */
 function bands(r: Renderer, colors: string[], y0 = 0, y1 = VIEW_H): void {
-  const n = colors.length, hh = (y1 - y0) / n;
-  colors.forEach((c, i) => r.fillRect(0, y0 + Math.floor(i * hh), VIEW_W, Math.ceil(hh) + 1, c));
+  r.hdma(colors, y0, y1);
 }
 /** Desenha uma forma também deslocada de ±W para a faixa emendar sem costura. */
 function wrap(fn: (dx: number) => void): void {

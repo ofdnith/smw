@@ -1,4 +1,5 @@
 /** Lumi: movimento, pulo, cambalhota, carregar, nadar, escalar, planar, montaria. */
+import { VIEW_W } from '../../engine/renderer';
 import type { Renderer } from '../../engine/renderer';
 import { sfx } from '../../engine/audio/sfx';
 import { approach, clamp, sign } from '../../engine/rng';
@@ -446,7 +447,7 @@ export class Player extends Entity {
     if (inp.isPressed('item') && world.run.reserve !== 'none') {
       const kind = world.run.reserve;
       world.run.reserve = 'none';
-      const p = new PowerUp(world.camX + 160 - 8, world.camY + 16, kind, false);
+      const p = new PowerUp(world.camX + VIEW_W / 2 - 8, world.camY + 16, kind, false);
       p.fromReserve = true;
       world.add(p);
       sfx('item');

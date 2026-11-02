@@ -5,6 +5,7 @@
  *
  * Tons: 0 = sombra profunda, 1 = sombra, 2 = base, 3 = luz, 4 = brilho.
  */
+import { rgb555Tuple } from './console';
 import type { Palette } from './sprites';
 import { hexToRgba } from './sprites';
 
@@ -332,7 +333,7 @@ export function canvasToFrame(c: Canvas): { img: CanvasImageSource; w: number; h
   const rgb = new Map<string, [number, number, number]>();
   const hex = (h: string): [number, number, number] => {
     let v = rgb.get(h);
-    if (!v) { const n = parseInt(h.slice(1), 16); v = [(n >> 16) & 255, (n >> 8) & 255, n & 255]; rgb.set(h, v); }
+    if (!v) { v = rgb555Tuple(h); rgb.set(h, v); }
     return v;
   };
   for (let i = 0; i < c.w * c.h; i++) {

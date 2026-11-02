@@ -2,6 +2,7 @@
  * Pixel art em código: cada sprite é um mapa de caracteres + paleta.
  * Compilado para canvases em memória na inicialização. Nenhum PNG no repositório.
  */
+import { rgb555, rgb555Tuple } from './console';
 
 export type Palette = Record<string, string | null>;
 
@@ -36,11 +37,10 @@ export function parseFrame(text: string): string[] {
   return lines.map((l) => l.padEnd(w, '.'));
 }
 
+/** Cor da paleta -> RGBA, já quantizada para RGB555 (regra do console virtual). */
 export function hexToRgba(hex: string): [number, number, number, number] {
-  const h = hex.replace('#', '');
-  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
-  const n = parseInt(full, 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 255];
+  const [r, g, b] = rgb555Tuple(hex);
+  return [r, g, b, 255];
 }
 
 function makeCanvas(w: number, h: number): HTMLCanvasElement | OffscreenCanvas {
@@ -84,8 +84,51 @@ export function compileFrame(text: string, palette: Palette, ox = 0, oy = 0, fli
   return { img: canvas, w, h, ox: flipX ? w - 1 - ox : ox, oy };
 }
 
+/** Limite do console: cores visíveis por sub-paleta de sprite (a 16ª é a transparência). */
+export const SPRITE_COLORS = 15;
+
+/**
+ * Encaixa a paleta de um sprite no limite do console: enquanto houver mais de 15 cores (já em
+ * RGB555), a cor menos usada do par mais parecido é trocada pela outra. Sprites dentro do limite
+ * saem intactos.
+ */
+export function fitPalette(def: SpriteDef, max = SPRITE_COLORS): Palette {
+  const use = new Map<string, number>();
+  for (const f of def.frames) for (const ch of f) {
+    const c = def.palette[ch];
+    if (!c || ch === '.' || ch === ' ' || ch === '\n') continue;
+    const q = rgb555(c);
+    use.set(q, (use.get(q) ?? 0) + 1);
+  }
+  if (use.size <= max) return def.palette;
+  const map = new Map<string, string>();
+  for (const c of use.keys()) map.set(c, c);
+  const dist = (a: string, b: string): number => {
+    const A = rgb555Tuple(a), B = rgb555Tuple(b);
+    return 2 * (A[0] - B[0]) ** 2 + 4 * (A[1] - B[1]) ** 2 + 3 * (A[2] - B[2]) ** 2;
+  };
+  const live = new Map(use);
+  while (live.size > max) {
+    const cs = [...live.keys()];
+    let best = Infinity, bi = 0, bj = 1;
+    for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) {
+      // juntar cores parecidas e pouco usadas custa menos
+      const d = dist(cs[i], cs[j]) * Math.min(live.get(cs[i])!, live.get(cs[j])!);
+      if (d < best) { best = d; bi = i; bj = j; }
+    }
+    const [keep, drop] = live.get(cs[bi])! >= live.get(cs[bj])! ? [cs[bi], cs[bj]] : [cs[bj], cs[bi]];
+    live.set(keep, live.get(keep)! + live.get(drop)!);
+    live.delete(drop);
+    for (const [k, v] of map) if (v === drop) map.set(k, keep);
+  }
+  const out: Palette = {};
+  for (const [k, c] of Object.entries(def.palette)) out[k] = c ? (map.get(rgb555(c)) ?? c) : c;
+  return out;
+}
+
 export function compileSprite(def: SpriteDef, flipX = false): Sprite {
-  const frames = def.frames.map((f) => compileFrame(f, def.palette, def.ox ?? 0, def.oy ?? 0, flipX));
+  const pal = fitPalette(def);
+  const frames = def.frames.map((f) => compileFrame(f, pal, def.ox ?? 0, def.oy ?? 0, flipX));
   return { frames, w: frames[0]?.w ?? 0, h: frames[0]?.h ?? 0 };
 }
 

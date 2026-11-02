@@ -70,8 +70,9 @@ export function drawHud(r: Renderer, w: World, level: LevelDef, game: Game, time
   if (w.time < 150 && !w.startedFromCheckpoint) {
     const a = w.time < 30 ? w.time / 30 : w.time > 120 ? (150 - w.time) / 30 : 1;
     r.ctx.globalAlpha = a;
-    r.box(VIEW_W / 2 - 80, 40, 160, 22);
-    r.text(level.name, VIEW_W / 2, 47, '#ffd24a', 'center');
+    // no meio da tela, abaixo da caixa de dicas (que fica no topo)
+    r.box(VIEW_W / 2 - 80, 100, 160, 22);
+    r.text(level.name, VIEW_W / 2, 107, '#ffd24a', 'center');
     r.ctx.globalAlpha = 1;
   }
   // fim de fase

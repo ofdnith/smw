@@ -53,10 +53,10 @@ export class PauseScene implements Scene {
   draw(r: Renderer, _alpha: number, game: Game): void {
     r.dim(0.6);
     const s = game.save.settings;
-    r.box(70, 30, 180, 120);
-    r.text('PAUSA', VIEW_W / 2, 38, '#ffd24a', 'center');
+    r.box(VIEW_W / 2 - 92, 40, 184, 124);
+    r.text('PAUSA', VIEW_W / 2, 48, '#ffd24a', 'center');
     this.items.forEach((it, i) => {
-      const y = 56 + i * 14;
+      const y = 66 + i * 14;
       const sel = i === this.index;
       const label: Record<Item, string> = {
         continue: 'CONTINUAR',
@@ -67,7 +67,7 @@ export class PauseScene implements Scene {
         options: 'OPCOES E CONTROLES',
         exit: this.level.timeAttack ? 'DESISTIR' : 'VOLTAR AO MAPA',
       };
-      r.text((sel ? '> ' : '  ') + label[it], 82, y, sel ? '#ffffff' : '#c9ccd6');
+      r.text((sel ? '> ' : '  ') + label[it], VIEW_W / 2 - 84, y, sel ? '#ffffff' : '#c9ccd6');
     });
     r.text(`${this.level.level.name}`, VIEW_W / 2, VIEW_H - 22, '#9cf29c', 'center');
   }

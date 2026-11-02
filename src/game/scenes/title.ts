@@ -38,12 +38,12 @@ export class TitleScene implements Scene {
     r.camY = 0;
     drawBackground(r, 'praia', this.t * 0.5, 0, { frame: this.t });
     // areia
-    r.fillRect(0, 150, VIEW_W, 30, '#f2dca6');
-    r.fillRect(0, 150, VIEW_W, 2, '#fff2c8');
+    r.fillRect(0, VIEW_H - 46, VIEW_W, 46, '#f2dca6');
+    r.fillRect(0, VIEW_H - 46, VIEW_W, 2, '#fff2c8');
     // Lumi correndo e Bolota
     const lx = 40 + ((this.t * 0.8) % 400) - 40;
-    r.drawSprite({ palette: LUMI_PALETTE, frames: LUMI.run }, Math.floor(this.t / 4) % 4, lx, 126, false, false);
-    r.drawSprite(BOLOTA.normal, 1 + (Math.floor(this.t / 5) % 3), lx - 34, 134, false, false);
+    r.drawSprite({ palette: LUMI_PALETTE, frames: LUMI.run }, Math.floor(this.t / 4) % 4, lx, VIEW_H - 70, false, false);
+    r.drawSprite(BOLOTA.normal, 1 + (Math.floor(this.t / 5) % 3), lx - 34, VIEW_H - 62, false, false);
     // logo
     const y = 30 + Math.sin(this.t / 40) * 2;
     r.box(VIEW_W / 2 - 110, y - 10, 220, 66, 'rgba(10,20,40,0.75)', '#ffd24a');
@@ -66,13 +66,13 @@ export class TitleScene implements Scene {
     r.ctx.fillStyle = '#fff7b0';
     r.ctx.beginPath();
     const a = this.t / 120;
-    r.ctx.moveTo(290, 20);
-    r.ctx.lineTo(290 + Math.cos(a) * 400, 20 + Math.sin(a) * 400);
-    r.ctx.lineTo(290 + Math.cos(a + 0.3) * 400, 20 + Math.sin(a + 0.3) * 400);
+    r.ctx.moveTo(VIEW_W - 30, 20);
+    r.ctx.lineTo(VIEW_W - 30 + Math.cos(a) * 400, 20 + Math.sin(a) * 400);
+    r.ctx.lineTo(VIEW_W - 30 + Math.cos(a + 0.3) * 400, 20 + Math.sin(a + 0.3) * 400);
     r.ctx.fill();
     r.ctx.globalAlpha = 1;
     if (Math.floor(this.t / 30) % 2 === 0 && this.t > 20) r.text('APERTE UM BOTAO', VIEW_W / 2, VIEW_H - 16, '#ffffff', 'center', '#000000');
-    r.text('V1.2', 4, VIEW_H - 9, 'rgba(0,0,0,0.5)');
+    r.text('V1.3', 4, VIEW_H - 10, 'rgba(0,0,0,0.5)', 'left', null);
   }
 }
 
@@ -130,28 +130,28 @@ export class FileSelectScene implements Scene {
     const total = Object.values(LEVELS).filter((l) => l.kind !== 'bonus').length;
     for (let i = 0; i < 3; i++) {
       const s = game.save.slots[i];
-      const y = 34 + i * 34;
+      const y = 36 + i * 40;
       const sel = this.index === i;
-      r.box(40, y, 240, 28, sel ? '#1a2a4a' : 'rgba(10,20,40,0.8)', sel ? '#ffd24a' : '#5a6a8a');
-      r.text(`FAROL ${i + 1}`, 48, y + 4, sel ? '#ffffff' : '#c9ccd6');
+      r.box(16, y, VIEW_W - 32, 32, sel ? '#1a2a4a' : 'rgba(10,20,40,0.8)', sel ? '#ffd24a' : '#5a6a8a');
+      r.text(`FAROL ${i + 1}`, 26, y + 5, sel ? '#ffffff' : '#c9ccd6');
       if (s) {
         const pearls = Object.values(s.pearls).reduce((acc, m) => acc + ((m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)), 0);
-        r.text(`${slotProgress(s, total)}%  VIDAS ${s.lives}  PEROLAS ${pearls}`, 48, y + 15, '#9cf29c');
+        r.text(`${slotProgress(s, total)}%  VIDAS ${s.lives}  PEROLAS ${pearls}`, 26, y + 18, '#9cf29c');
         const h = Math.floor(s.playtimeFrames / 216000), m = Math.floor((s.playtimeFrames / 3600) % 60);
-        r.text(`${h}H${String(m).padStart(2, '0')}`, 270, y + 15, '#c9ccd6', 'right');
-      } else r.text('NOVA AVENTURA', 48, y + 15, '#9fb3c8');
+        r.text(`${h}H${String(m).padStart(2, '0')}`, VIEW_W - 26, y + 5, '#c9ccd6', 'right');
+      } else r.text('NOVA AVENTURA', 26, y + 18, '#9fb3c8');
     }
-    const ySel = 34 + 3 * 34;
+    const ySel = 36 + 3 * 40 + 4;
     ['EXTRAS', 'OPCOES', 'CREDITOS'].forEach((label, k) => {
       const sel = this.index === 3 + k;
-      r.text((sel ? '> ' : '  ') + label, 48 + k * 80, ySel + 2, sel ? '#ffffff' : '#c9ccd6');
+      r.text((sel ? '> ' : '  ') + label, 14 + k * 80, ySel + 2, sel ? '#ffffff' : '#c9ccd6');
     });
     r.text('Z/A: ESCOLHER   C/B: APAGAR', VIEW_W / 2, VIEW_H - 12, 'rgba(255,255,255,0.6)', 'center');
     if (this.confirmDelete >= 0) {
       r.dim(0.6);
-      r.box(60, 70, 200, 40);
-      r.text(`APAGAR O FAROL ${this.confirmDelete + 1}?`, VIEW_W / 2, 78, '#ff8a8a', 'center');
-      r.text('Z/A: SIM     C/B: NAO', VIEW_W / 2, 94, '#ffffff', 'center');
+      r.box(VIEW_W / 2 - 100, 90, 200, 40);
+      r.text(`APAGAR O FAROL ${this.confirmDelete + 1}?`, VIEW_W / 2, 98, '#ff8a8a', 'center');
+      r.text('Z/A: SIM     C/B: NAO', VIEW_W / 2, 114, '#ffffff', 'center');
     }
   }
 }

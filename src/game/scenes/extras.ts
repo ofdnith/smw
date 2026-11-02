@@ -2,6 +2,7 @@
  * Extras, desbloqueados pelas pérolas do melhor arquivo:
  * Galeria (arte do jogo), Sala de Som (trilha e efeitos) e Contra-relógio (fases já concluídas).
  */
+import { wrap } from '../entities/items';
 import { Renderer, VIEW_W, VIEW_H } from '../../engine/renderer';
 import { sfx, SFX } from '../../engine/audio/sfx';
 import { sequencer } from '../../engine/audio/sequencer';
@@ -79,9 +80,9 @@ export class ExtrasScene implements Scene {
       const y = 40 + i * 30;
       const sel = i === this.index;
       const open = pearls >= it.need;
-      r.box(60, y, 200, 24, sel ? '#1a2a4a' : 'rgba(10,20,40,0.8)', sel ? '#ffd24a' : '#5a6a8a');
-      r.text(it.name, 72, y + 4, open ? (sel ? '#ffffff' : '#c9ccd6') : '#6a7a8a');
-      r.text(open ? 'ABERTO' : `PRECISA DE ${it.need} PEROLAS`, 72, y + 14, open ? '#9cf29c' : '#ff9a8a');
+      r.box(VIEW_W / 2 - 104, y, 208, 26, sel ? '#1a2a4a' : 'rgba(10,20,40,0.8)', sel ? '#ffd24a' : '#5a6a8a');
+      r.text(it.name, VIEW_W / 2 - 94, y + 5, open ? (sel ? '#ffffff' : '#c9ccd6') : '#6a7a8a');
+      r.text(open ? 'ABERTO' : `PRECISA DE ${it.need} PEROLAS`, VIEW_W / 2 - 94, y + 15, open ? '#9cf29c' : '#ff9a8a');
     });
     r.text('Z: ABRIR   C: VOLTAR', VIEW_W / 2, VIEW_H - 12, 'rgba(255,255,255,0.6)', 'center');
   }
@@ -176,7 +177,7 @@ export class GalleryScene implements Scene {
     r.box(VIEW_W / 2 - 56, 32, 112, 96, 'rgba(10,20,40,0.85)', '#5a6a8a');
     r.drawFrameScaled(f, VIEW_W / 2 - (f.w * scale) / 2, 80 - (f.h * scale) / 2, scale, scale);
     r.text(e.name, VIEW_W / 2, 134, '#ffd24a', 'center', '#000000');
-    r.textBlock(e.desc, VIEW_W / 2, 145, '#ffffff', '#000000', 9);
+    r.textBlock(e.desc.flatMap((l) => wrap(l, 34)), VIEW_W / 2, 148, '#ffffff', '#000000', 10);
     r.text(`${this.idx + 1}/${cat.entries.length}`, VIEW_W - 8, VIEW_H - 10, '#9fb3c8', 'right');
     r.text('SETAS: NAVEGAR   C: VOLTAR', 8, VIEW_H - 10, 'rgba(255,255,255,0.6)');
   }
@@ -227,7 +228,7 @@ export class SoundRoomScene implements Scene {
     const active = this.playing >= 0 && sequencer.playing;
     for (let i = 0; i < 12; i++) {
       const h = active ? 4 + Math.abs(Math.sin(this.t / (6 + i) + i * 1.7)) * 26 : 2;
-      r.fillRect(230 + i * 6, 150 - h, 4, h, i % 3 === 0 ? '#ffd24a' : i % 3 === 1 ? '#7fd1ff' : '#ff9ac1');
+      r.fillRect(VIEW_W - 44 + i * 6, 190 - h, 4, h, i % 3 === 0 ? '#ffd24a' : i % 3 === 1 ? '#7fd1ff' : '#ff9ac1');
     }
     r.text('Z: TOCAR  X: PARAR  C: VOLTAR', VIEW_W / 2, VIEW_H - 10, 'rgba(255,255,255,0.6)', 'center');
   }

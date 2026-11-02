@@ -121,7 +121,11 @@ export class Game {
     if (this.transition) {
       const tr = this.transition;
       const k = tr.out ? tr.t / tr.dur : 1 - tr.t / tr.dur;
-      if (tr.kind === 'fade') r.dim(k);
+      if (tr.kind === 'fade') {
+        // fade do console: mosaico crescendo e brilho mestre caindo em 16 degraus
+        r.mosaic(1 + Math.floor(k * 14));
+        r.brightness(15 * (1 - k));
+      }
       else {
         const maxR = Math.hypot(VIEW_W, VIEW_H) * 0.6;
         r.iris(tr.cx, tr.cy, (1 - k) * maxR);

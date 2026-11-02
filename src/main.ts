@@ -2,7 +2,15 @@
 import { Game } from './game/game';
 import { TitleScene } from './game/scenes/title';
 import { LevelScene } from './game/scenes/level';
-import { TimeAttackScene } from './game/scenes/extras';
+import { TimeAttackScene, ExtrasScene, GalleryScene, SoundRoomScene } from './game/scenes/extras';
+import { FileSelectScene } from './game/scenes/title';
+import { OptionsScene } from './game/scenes/options';
+import { CreditsScene } from './game/scenes/credits';
+import { CasinoScene } from './game/scenes/casino';
+import { BonusScene } from './game/scenes/bonus';
+import { GameOverScene } from './game/scenes/gameover';
+import { CutsceneScene, CUTSCENES } from './game/scenes/cutscene';
+import { PauseScene } from './game/scenes/pause';
 import { WorldMapScene } from './game/scenes/worldmap';
 import { synth } from './engine/audio/synth';
 import { LEVELS } from './content/levels';
@@ -68,6 +76,29 @@ if (ta && LEVELS[ta]) {
 } else if (lv && LEVELS[lv]) {
   if (params.get('debug')) game.debug = true;
   game.push(new LevelScene(LEVELS[lv], game));
+} else if (params.has('ui')) {
+  // ?ui=<tela> abre uma tela de interface direto (dev/capturas)
+  const ui = params.get('ui');
+  const back = (): void => game.pop();
+  if (ui === 'pause') {
+    const lvl = new LevelScene(LEVELS['1-1'], game);
+    game.push(lvl);
+    game.push(new PauseScene(lvl));
+  } else {
+    const make: Record<string, () => import('./game/game').Scene> = {
+      select: () => new FileSelectScene(),
+      options: () => new OptionsScene(),
+      extras: () => new ExtrasScene(),
+      gallery: () => new GalleryScene(),
+      sound: () => new SoundRoomScene(),
+      credits: () => new CreditsScene(back),
+      casino: () => new CasinoScene(7),
+      bonus: () => new BonusScene(1),
+      gameover: () => new GameOverScene(),
+      cutscene: () => new CutsceneScene(Object.values(CUTSCENES)[0], back),
+    };
+    game.push((make[ui ?? ''] ?? make.select)());
+  }
 } else if (params.has('editor')) {
   game.push(new EditorScene(params.get('editor') || undefined));
 } else if (params.has('art')) {

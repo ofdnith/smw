@@ -1,10 +1,11 @@
-/** Renderizador: buffer lógico 320x180 em Canvas 2D, escalado por inteiro para a tela. */
+/** Renderizador: buffer lógico 256x224 (o quadro do console virtual) em Canvas 2D, escalado por inteiro para a tela. */
 import { glyph, FONT_W, FONT_H, textWidth } from './font';
 import type { Frame, Sprite, SpriteDef } from './sprites';
 import { getSprite } from './sprites';
+import { rgb555, sampleStops } from './console';
 
-export const VIEW_W = 320;
-export const VIEW_H = 180;
+export const VIEW_W = 256;
+export const VIEW_H = 224;
 
 export class Renderer {
   readonly buffer: HTMLCanvasElement;
@@ -58,17 +59,86 @@ export class Renderer {
 
   /** Gradiente vertical de céu. */
   gradient(stops: [number, string][], y0 = 0, y1 = VIEW_H): void {
-    const g = this.ctx.createLinearGradient(0, y0, 0, y1);
-    for (const [t, c] of stops) g.addColorStop(t, c);
-    this.ctx.fillStyle = g;
-    this.ctx.fillRect(0, y0, VIEW_W, y1 - y0);
+    // paradas uniformes já bastam aqui; o desenho é feito linha a linha
+    this.hdma(stops.map(([, c]) => c), y0, y1);
   }
 
   fillRect(x: number, y: number, w: number, h: number, color: string, world = false): void {
     const ox = world ? -this.camX + this.shakeX : 0;
     const oy = world ? -this.camY + this.shakeY : 0;
-    this.ctx.fillStyle = color;
+    this.ctx.fillStyle = color.charCodeAt(0) === 35 ? rgb555(color) : color;
     this.ctx.fillRect(Math.round(x + ox), Math.round(y + oy), Math.round(w), Math.round(h));
+  }
+
+  /**
+   * Degradê "HDMA": uma cor por linha de varredura, interpolada entre as paradas e quantizada em
+   * RGB555. Os degraus aparecem sozinhos, como nos céus dos cartuchos de 16 bits.
+   */
+  hdma(colors: string[], y0 = 0, y1 = VIEW_H): void {
+    const top = Math.max(0, Math.round(y0)), bot = Math.min(VIEW_H, Math.round(y1));
+    const span = Math.max(1, y1 - y0);
+    let runStart = top, runColor = '';
+    for (let y = top; y <= bot; y++) {
+      const c = y < bot ? sampleStops(colors, (y - y0) / span) : '';
+      if (c !== runColor) {
+        if (runColor) {
+          this.ctx.fillStyle = runColor;
+          this.ctx.fillRect(0, runStart, VIEW_W, y - runStart);
+        }
+        runColor = c;
+        runStart = y;
+      }
+    }
+  }
+
+  private scratch: HTMLCanvasElement | null = null;
+  private scratchCtx(): CanvasRenderingContext2D {
+    if (!this.scratch) {
+      this.scratch = document.createElement('canvas');
+      this.scratch.width = VIEW_W;
+      this.scratch.height = VIEW_H;
+    }
+    const c = this.scratch.getContext('2d') as CanvasRenderingContext2D;
+    c.imageSmoothingEnabled = false;
+    return c;
+  }
+
+  /**
+   * Deslocamento horizontal por linha (efeito de HDMA no registrador de rolagem): água, calor.
+   * Linhas de y0 a y1 (tela) andam `amp` pixels numa senoide que corre com `phase`.
+   */
+  waveLines(y0: number, y1: number, amp: number, phase: number, period = 22): void {
+    const top = Math.max(0, Math.floor(y0)), bot = Math.min(VIEW_H, Math.ceil(y1));
+    if (bot <= top) return;
+    const s = this.scratchCtx();
+    s.clearRect(0, 0, VIEW_W, VIEW_H);
+    s.drawImage(this.buffer, 0, 0);
+    for (let y = top; y < bot; y++) {
+      const dx = Math.round(Math.sin((y + phase) * ((2 * Math.PI) / period)) * amp);
+      if (dx === 0) continue;
+      this.ctx.drawImage(this.scratch!, 0, y, VIEW_W, 1, dx, y, VIEW_W, 1);
+      // borda que ficou descoberta: repete o pixel da ponta
+      if (dx > 0) this.ctx.drawImage(this.scratch!, 0, y, 1, 1, 0, y, dx, 1);
+      else this.ctx.drawImage(this.scratch!, VIEW_W - 1, y, 1, 1, VIEW_W + dx, y, -dx, 1);
+    }
+  }
+
+  /** Mosaico do console: blocos de `size` pixels (1 = desligado). */
+  mosaic(size: number): void {
+    const n = Math.floor(size);
+    if (n <= 1) return;
+    const s = this.scratchCtx();
+    const w = Math.ceil(VIEW_W / n), h = Math.ceil(VIEW_H / n);
+    s.clearRect(0, 0, VIEW_W, VIEW_H);
+    s.drawImage(this.buffer, 0, 0, VIEW_W, VIEW_H, 0, 0, w, h);
+    this.ctx.drawImage(this.scratch!, 0, 0, w, h, 0, 0, w * n, h * n);
+  }
+
+  /** Brilho mestre em 16 níveis (15 = normal, 0 = preto), como o registrador do console. */
+  brightness(level: number): void {
+    const l = Math.max(0, Math.min(15, Math.round(level)));
+    if (l >= 15) return;
+    this.dim(1 - l / 15);
   }
 
   drawFrame(f: Frame, x: number, y: number, world = true, alpha = 1): void {
@@ -94,7 +164,7 @@ export class Renderer {
     this.ctx.drawImage(f.img, Math.round(x + ox), Math.round(y + oy), Math.round(f.w * sx), Math.round(f.h * sy));
   }
 
-  text(s: string, x: number, y: number, color = '#ffffff', align: 'left' | 'center' | 'right' = 'left', shadow?: string): void {
+  text(s: string, x: number, y: number, color = '#ffffff', align: 'left' | 'center' | 'right' = 'left', shadow: string | null = '#0a0e1c'): void {
     const w = textWidth(s);
     let cx = Math.round(x);
     if (align === 'center') cx -= Math.floor(w / 2);
@@ -113,7 +183,7 @@ export class Renderer {
   }
 
   /** Texto com quebra de linha simples, centralizado. */
-  textBlock(lines: string[], x: number, y: number, color = '#ffffff', shadow?: string, lineH = FONT_H + 2): void {
+  textBlock(lines: string[], x: number, y: number, color = '#ffffff', shadow: string | null = '#0a0e1c', lineH = FONT_H + 2): void {
     lines.forEach((l, i) => this.text(l, x, y + i * lineH, color, 'center', shadow));
   }
 

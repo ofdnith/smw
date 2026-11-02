@@ -98,7 +98,7 @@ export class CutsceneScene implements Scene {
     // letterbox + texto
     r.fillRect(0, 0, VIEW_W, 10, '#000000');
     r.fillRect(0, VIEW_H - 54, VIEW_W, 54, 'rgba(0,0,0,0.85)');
-    const lines = wrap(p.text.slice(0, this.chars), 48);
+    const lines = wrap(p.text.slice(0, this.chars), 34);
     if (p.speaker) r.text(p.speaker, 12, VIEW_H - 50, '#ffd24a');
     lines.forEach((l, i) => r.text(l, 12, VIEW_H - (p.speaker ? 40 : 48) + i * 10, '#ffffff'));
     if (this.chars >= p.text.length && Math.floor(this.t / 20) % 2 === 0) r.text('>', VIEW_W - 14, VIEW_H - 12, '#ffd24a');

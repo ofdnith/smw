@@ -46,10 +46,10 @@ export class CreditsScene implements Scene {
     });
     // desfile
     const px = (this.t * 0.6) % (VIEW_W + 120) - 60;
-    r.fillRect(0, 164, VIEW_W, 16, '#3a2a6a');
-    r.drawSprite({ palette: LUMI_PALETTE, frames: LUMI.walk }, Math.floor(this.t / 6) % 4, px, 140, false, false);
-    r.drawSprite(BOLOTA.normal, 1 + (Math.floor(this.t / 6) % 3), px - 26, 148, false, false);
-    r.drawSprite(ENEMIES.crab, Math.floor(this.t / 8) % 2, px - 50, 152, false, false);
-    r.drawSprite(ENEMIES.gull, Math.floor(this.t / 7) % 2, px + 30, 120 + Math.sin(this.t / 20) * 4, false, false);
+    r.fillRect(0, VIEW_H - 16, VIEW_W, 16, '#3a2a6a');
+    r.drawSprite({ palette: LUMI_PALETTE, frames: LUMI.walk }, Math.floor(this.t / 6) % 4, px, VIEW_H - 40, false, false);
+    r.drawSprite(BOLOTA.normal, 1 + (Math.floor(this.t / 6) % 3), px - 26, VIEW_H - 32, false, false);
+    r.drawSprite(ENEMIES.crab, Math.floor(this.t / 8) % 2, px - 50, VIEW_H - 28, false, false);
+    r.drawSprite(ENEMIES.gull, Math.floor(this.t / 7) % 2, px + 30, VIEW_H - 60 + Math.sin(this.t / 20) * 4, false, false);
   }
 }

@@ -251,6 +251,13 @@ export class LevelScene implements Scene {
       r.ctx.globalAlpha = 1;
       for (let x = 0; x < VIEW_W; x += 8) r.fillRect(camX + x, w.tideY + Math.sin((x + w.frame * 2) / 10) * 1.5, 5, 1, '#ffffff', true);
     }
+    // água: cada linha abaixo da superfície ondula um pouco (deslocamento por linha, estilo HDMA)
+    const wdef = w.room.def.water;
+    const surf = w.tideY >= 0 ? w.tideY : wdef ? wdef.y * TILE : -1;
+    if (surf >= 0) {
+      const sy = surf - camY;
+      if (sy < VIEW_H) r.waveLines(Math.max(0, sy + 2), VIEW_H, 1, w.frame * 0.35, 26);
+    }
     // partículas
     for (const p of w.particles) {
       const a = p.fade ? p.life / p.maxLife : 1;

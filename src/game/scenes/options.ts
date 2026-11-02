@@ -111,10 +111,10 @@ export class OptionsScene implements Scene {
     if (this.overlay) r.dim(0.75, '#050a18');
     else drawBackground(r, 'praia', this.t * 0.3, 0, { frame: this.t, night: true });
     const s = game.save.settings;
-    r.box(30, 6, VIEW_W - 60, VIEW_H - 12, 'rgba(10,20,40,0.92)');
-    r.text('OPCOES', VIEW_W / 2, 12, '#ffd24a', 'center');
+    r.box(12, 8, VIEW_W - 24, VIEW_H - 16, 'rgba(10,20,40,0.92)');
+    r.text('OPCOES', VIEW_W / 2, 16, '#ffd24a', 'center');
     this.rows.forEach((row, i) => {
-      const y = 26 + i * 11;
+      const y = 34 + i * 13;
       const sel = i === this.index;
       const col = sel ? '#ffffff' : '#c9ccd6';
       let left = '';
@@ -137,11 +137,11 @@ export class OptionsScene implements Scene {
         case 'reset': left = 'RESTAURAR CONTROLES'; break;
         case 'back': left = 'VOLTAR'; break;
       }
-      r.text((sel ? '> ' : '  ') + left, 40, y, col);
-      if (right) r.text(right, VIEW_W - 40, y, row.id === 'key' ? '#ffd24a' : col, 'right');
+      r.text((sel ? '> ' : '  ') + left, 18, y, col);
+      if (right) r.text(right, VIEW_W - 20, y, row.id === 'key' ? '#ffd24a' : col, 'right');
     });
-    const hint = this.listening ? 'APERTE UMA TECLA OU BOTAO (ESC CANCELA)' : 'Z: ESCOLHER   SETAS: AJUSTAR   C: VOLTAR';
-    r.text(hint, VIEW_W / 2, VIEW_H - 16, 'rgba(255,255,255,0.65)', 'center');
+    const hint = this.listening ? 'APERTE TECLA OU BOTAO (ESC SAI)' : 'Z: OK  SETAS: AJUSTAR  C: VOLTAR';
+    r.text(hint, VIEW_W / 2, VIEW_H - 22, 'rgba(255,255,255,0.65)', 'center');
   }
 }
 

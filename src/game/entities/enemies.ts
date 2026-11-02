@@ -1,4 +1,5 @@
 /** Inimigos comuns das sete ilhas. Todos originais. */
+import { VIEW_W } from '../../engine/renderer';
 import type { Renderer } from '../../engine/renderer';
 import { sfx } from '../../engine/audio/sfx';
 import { approach, tsin, tcos, sign, clamp } from '../../engine/rng';
@@ -283,7 +284,7 @@ export class Gull extends Enemy {
     b.vx = this.facing * this.speed;
     b.x += b.vx;
     b.y = this.baseY + tsin(this.anim / 120) * 10;
-    if (Math.abs(b.x - world.camX - 160) > 190) this.facing = -this.facing;
+    if (Math.abs(b.x - world.camX - VIEW_W / 2) > VIEW_W / 2 + 30) this.facing = -this.facing;
     if (Math.abs(p.cx - this.cx) < 24 && p.y > b.y + 16 && p.y - b.y < 120 && this.anim % 20 === 0) {
       this.diving = 60;
       this.facing = sign(p.cx - this.cx) || this.facing;
