@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="theme-color" content="#0b1020" />
+    <title>Lumi e o Arquipélago dos Faróis</title>
+    <style>
+      html, body { margin: 0; padding: 0; background: #0b1020; height: 100%; overflow: hidden; }
+      body { display: flex; align-items: center; justify-content: center; touch-action: none; }
+      canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; }
+      #touch { position: fixed; inset: 0; pointer-events: none; display: none; }
+      #touch.on { display: block; }
+      .tb { position: absolute; pointer-events: auto; width: 64px; height: 64px; border-radius: 50%;
+            background: rgba(255,255,255,0.12); border: 2px solid rgba(255,255,255,0.25);
+            color: rgba(255,255,255,0.7); font: bold 14px sans-serif; display: flex; align-items: center;
+            justify-content: center; user-select: none; -webkit-user-select: none; }
+      .tb:active, .tb.down { background: rgba(255,255,255,0.35); }
+    </style>
+  </head>
+  <body>
+    <canvas id="game" width="320" height="180"></canvas>
+    <div id="touch">
+      <div class="tb" data-a="left"  style="left:16px;  bottom:80px;">◀</div>
+      <div class="tb" data-a="right" style="left:100px; bottom:80px;">▶</div>
+      <div class="tb" data-a="down"  style="left:58px;  bottom:16px;">▼</div>
+      <div class="tb" data-a="up"    style="left:58px;  bottom:144px;">▲</div>
+      <div class="tb" data-a="jump"  style="right:16px; bottom:64px;">A</div>
+      <div class="tb" data-a="run"   style="right:96px; bottom:24px;">X</div>
+      <div class="tb" data-a="spin"  style="right:96px; bottom:104px;">B</div>
+      <div class="tb" data-a="pause" style="right:16px; top:16px; width:44px; height:44px;">II</div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

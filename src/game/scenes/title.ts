@@ -1,0 +1,135 @@
+/** Tela de título e seleção de arquivo. */
+import { Renderer, VIEW_W, VIEW_H } from '../../engine/renderer';
+import { sfx } from '../../engine/audio/sfx';
+import { synth } from '../../engine/audio/synth';
+import { sequencer } from '../../engine/audio/sequencer';
+import type { Game, Scene } from '../game';
+import { drawBackground } from '../render/backgrounds';
+import { LUMI, LUMI_PALETTE } from '../../content/art/lumi';
+import { BOLOTA } from '../../content/art/bolota';
+import { MUSIC } from '../../content/music';
+import { newSlot, slotProgress } from '../../engine/save';
+import { WorldMapScene } from './worldmap';
+import { LEVELS } from '../../content/levels';
+import { CreditsScene } from './credits';
+
+export class TitleScene implements Scene {
+  t = 0;
+  started = false;
+  musicOn = false;
+  update(game: Game): void {
+    this.t++;
+    const inp = game.input.state;
+    if (!this.musicOn && synth.ready) {
+      this.musicOn = true;
+      sequencer.play(MUSIC.titulo);
+    }
+    if (inp.anyPressed() && this.t > 20) {
+      if (!synth.ready) synth.unlock();
+      sfx('select');
+      game.transitionTo(() => game.push(new FileSelectScene()), 'fade');
+    }
+  }
+  draw(r: Renderer): void {
+    r.camX = 0;
+    r.camY = 0;
+    drawBackground(r, 'praia', this.t * 0.5, 0, { frame: this.t });
+    // areia
+    r.fillRect(0, 150, VIEW_W, 30, '#f2dca6');
+    r.fillRect(0, 150, VIEW_W, 2, '#fff2c8');
+    // Lumi correndo e Bolota
+    const lx = 40 + ((this.t * 0.8) % 400) - 40;
+    r.drawSprite({ palette: LUMI_PALETTE, frames: LUMI.run }, Math.floor(this.t / 4) % 4, lx, 126, false, false);
+    r.drawSprite(BOLOTA.normal, 1 + (Math.floor(this.t / 5) % 3), lx - 34, 134, false, false);
+    // logo
+    const y = 30 + Math.sin(this.t / 40) * 2;
+    r.box(VIEW_W / 2 - 110, y - 8, 220, 60, 'rgba(10,20,40,0.75)', '#ffd24a');
+    r.text('LUMI', VIEW_W / 2, y, '#ffd24a', 'center', '#7a4a00');
+    r.text('E O ARQUIPELAGO', VIEW_W / 2, y + 14, '#ffffff', 'center', '#000000');
+    r.text('DOS FAROIS', VIEW_W / 2, y + 26, '#ffffff', 'center', '#000000');
+    // feixe de farol girando
+    r.ctx.globalAlpha = 0.15 + 0.1 * Math.sin(this.t / 20);
+    r.ctx.fillStyle = '#fff7b0';
+    r.ctx.beginPath();
+    const a = this.t / 120;
+    r.ctx.moveTo(290, 20);
+    r.ctx.lineTo(290 + Math.cos(a) * 400, 20 + Math.sin(a) * 400);
+    r.ctx.lineTo(290 + Math.cos(a + 0.3) * 400, 20 + Math.sin(a + 0.3) * 400);
+    r.ctx.fill();
+    r.ctx.globalAlpha = 1;
+    if (Math.floor(this.t / 30) % 2 === 0 && this.t > 20) r.text('APERTE UM BOTAO', VIEW_W / 2, VIEW_H - 16, '#ffffff', 'center', '#000000');
+    r.text('V1.0  FEITO DO ZERO EM CODIGO', 4, VIEW_H - 9, 'rgba(0,0,0,0.5)');
+  }
+}
+
+export class FileSelectScene implements Scene {
+  index = 0;
+  confirmDelete = -1;
+  t = 0;
+  update(game: Game): void {
+    this.t++;
+    const inp = game.input.state;
+    const total = Object.values(LEVELS).filter((l) => l.kind !== 'bonus').length;
+    void total;
+    if (this.confirmDelete >= 0) {
+      if (inp.isPressed('jump')) {
+        game.save.slots[this.confirmDelete] = null;
+        game.persist();
+        this.confirmDelete = -1;
+        sfx('blockbreak');
+      } else if (inp.isPressed('spin') || inp.isPressed('pause') || inp.isPressed('run')) {
+        this.confirmDelete = -1;
+        sfx('menu');
+      }
+      return;
+    }
+    if (inp.isPressed('down')) { this.index = (this.index + 1) % 4; sfx('menu'); }
+    if (inp.isPressed('up')) { this.index = (this.index + 3) % 4; sfx('menu'); }
+    if (inp.isPressed('spin') && this.index < 3 && game.save.slots[this.index]) {
+      this.confirmDelete = this.index;
+      sfx('menu');
+    }
+    if (inp.isPressed('jump') || inp.isPressed('pause')) {
+      if (this.index === 3) {
+        sfx('select');
+        game.transitionTo(() => game.push(new CreditsScene(() => game.pop())), 'fade');
+        return;
+      }
+      sfx('select');
+      game.slotIndex = this.index;
+      if (!game.save.slots[this.index]) game.save.slots[this.index] = newSlot();
+      game.persist();
+      sequencer.stop(0.3);
+      game.transitionTo(() => game.replace(new WorldMapScene(game, null)), 'iris');
+    }
+  }
+  draw(r: Renderer, _a: number, game: Game): void {
+    r.camX = 0;
+    r.camY = 0;
+    drawBackground(r, 'praia', this.t * 0.3, 0, { frame: this.t, night: true });
+    r.text('ESCOLHA UM FAROL', VIEW_W / 2, 14, '#ffd24a', 'center', '#000000');
+    const total = Object.values(LEVELS).filter((l) => l.kind !== 'bonus').length;
+    for (let i = 0; i < 3; i++) {
+      const s = game.save.slots[i];
+      const y = 34 + i * 34;
+      const sel = this.index === i;
+      r.box(40, y, 240, 28, sel ? '#1a2a4a' : 'rgba(10,20,40,0.8)', sel ? '#ffd24a' : '#5a6a8a');
+      r.text(`FAROL ${i + 1}`, 48, y + 4, sel ? '#ffffff' : '#c9ccd6');
+      if (s) {
+        const pearls = Object.values(s.pearls).reduce((acc, m) => acc + ((m & 1) + ((m >> 1) & 1) + ((m >> 2) & 1)), 0);
+        r.text(`${slotProgress(s, total)}%  VIDAS ${s.lives}  PEROLAS ${pearls}`, 48, y + 15, '#9cf29c');
+        const h = Math.floor(s.playtimeFrames / 216000), m = Math.floor((s.playtimeFrames / 3600) % 60);
+        r.text(`${h}H${String(m).padStart(2, '0')}`, 270, y + 15, '#c9ccd6', 'right');
+      } else r.text('NOVA AVENTURA', 48, y + 15, '#9fb3c8');
+    }
+    const ySel = 34 + 3 * 34;
+    r.text(this.index === 3 ? '> CREDITOS' : '  CREDITOS', 48, ySel + 2, this.index === 3 ? '#ffffff' : '#c9ccd6');
+    r.text('Z/A: ESCOLHER   C/B: APAGAR', VIEW_W / 2, VIEW_H - 12, 'rgba(255,255,255,0.6)', 'center');
+    if (this.confirmDelete >= 0) {
+      r.dim(0.6);
+      r.box(60, 70, 200, 40);
+      r.text(`APAGAR O FAROL ${this.confirmDelete + 1}?`, VIEW_W / 2, 78, '#ff8a8a', 'center');
+      r.text('Z/A: SIM     C/B: NAO', VIEW_W / 2, 94, '#ffffff', 'center');
+    }
+  }
+}

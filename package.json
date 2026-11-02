@@ -1,0 +1,27 @@
+{
+  "name": "lumi-arquipelago-dos-farois",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lumi e o Arquipélago dos Faróis — platformer 2D original",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint src tests",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "check": "npm run lint && npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9",
+    "@playwright/test": "^1.63.0",
+    "eslint": "^9",
+    "prettier": "^3",
+    "typescript": "^5",
+    "typescript-eslint": "^8",
+    "vite": "^7",
+    "vitest": "^3"
+  }
+}
