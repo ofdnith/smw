@@ -20,6 +20,7 @@ import { ENEMIES } from '../../content/art/enemies';
 import { BOSSES } from '../../content/art/bosses';
 import { ONDINA } from '../../content/art/npcs';
 import { LevelScene } from './level';
+import { EditorScene } from '../../tools/editor';
 
 export const UNLOCK = { gallery: 10, sound: 25, timeAttack: 40 } as const;
 
@@ -52,6 +53,7 @@ export class ExtrasScene implements Scene {
     { name: 'GALERIA', need: UNLOCK.gallery, open: () => new GalleryScene() },
     { name: 'SALA DE SOM', need: UNLOCK.sound, open: () => new SoundRoomScene() },
     { name: 'CONTRA-RELOGIO', need: UNLOCK.timeAttack, open: (g) => new TimeAttackScene(g) },
+    { name: 'EDITOR DE FASES', need: 0, open: () => new EditorScene() },
   ];
 
   update(game: Game): void {
@@ -74,7 +76,7 @@ export class ExtrasScene implements Scene {
     r.drawSprite(ITEMS.pearl, 0, VIEW_W / 2 - 30, 22, false, false);
     r.text(`${pearls} PEROLAS`, VIEW_W / 2 - 16, 24, '#dff6ff');
     this.items.forEach((it, i) => {
-      const y = 50 + i * 30;
+      const y = 40 + i * 30;
       const sel = i === this.index;
       const open = pearls >= it.need;
       r.box(60, y, 200, 24, sel ? '#1a2a4a' : 'rgba(10,20,40,0.8)', sel ? '#ffd24a' : '#5a6a8a');

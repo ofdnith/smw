@@ -119,7 +119,7 @@ export class LevelScene implements Scene {
     if (w.eventTimer === 1) {
       this.finalTime = w.time;
       const best = game.save.records[this.level.id];
-      if (best === undefined || this.finalTime < best) {
+      if (this.level.id !== 'EDITOR' && (best === undefined || this.finalTime < best)) {
         game.save.records[this.level.id] = this.finalTime;
         this.newRecord = true;
         game.persist();

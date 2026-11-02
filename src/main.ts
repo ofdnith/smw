@@ -11,6 +11,7 @@ import { sequencer } from './engine/audio/sequencer';
 import { MUSIC } from './content/music';
 import { sfx } from './engine/audio/sfx';
 import { ArtPreviewScene } from './tools/artpreview';
+import { EditorScene } from './tools/editor';
 import { getSprite } from './engine/sprites';
 import { LUMI, LUMI_PALETTE } from './content/art/lumi';
 
@@ -53,6 +54,8 @@ if (ta && LEVELS[ta]) {
 } else if (lv && LEVELS[lv]) {
   if (params.get('debug')) game.debug = true;
   game.push(new LevelScene(LEVELS[lv], game));
+} else if (params.has('editor')) {
+  game.push(new EditorScene(params.get('editor') || undefined));
 } else if (params.has('art')) {
   const sc = new ArtPreviewScene();
   sc.page = parseInt(params.get('art') ?? '0', 10) || 0;
