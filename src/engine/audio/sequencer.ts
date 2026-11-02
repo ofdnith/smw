@@ -19,6 +19,8 @@ export interface Song {
   spb?: number;
   /** passo onde o loop recomeça após a intro */
   loopStart?: number;
+  /** ganho da faixa inteira (mixagem: iguala o volume percebido entre as músicas) */
+  gain?: number;
   channels: Channel[];
 }
 
@@ -110,7 +112,7 @@ export class Sequencer {
     this.songLength = Math.max(...this.parsed.map((p) => p.length));
     this.gain = c.createGain();
     this.gain.gain.setValueAtTime(0.0001, c.currentTime);
-    this.gain.gain.exponentialRampToValueAtTime(1, c.currentTime + Math.max(0.01, fadeIn));
+    this.gain.gain.exponentialRampToValueAtTime(Math.max(0.0002, song.gain ?? 1), c.currentTime + Math.max(0.01, fadeIn));
     this.gain.connect(synth.musicBus);
     this.startTime = c.currentTime + 0.08;
     this.nextStep = 0;

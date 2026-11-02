@@ -387,3 +387,14 @@ export const TRACK_TITLES: [string, string][] = [
   ['forte', 'FORTES DA NEVOA'], ['chefe', 'GUARDIAO DO FAROL'], ['chefefinal', 'CAPITAO BRUMO'], ['cassino', 'CASSINO DE CONCHAS'],
   ['vitoria', 'FAROL A VISTA'], ['gameover', 'A NEVOA VENCEU'], ['creditos', 'LUZ NO HORIZONTE'],
 ];
+
+/**
+ * Mixagem: ganho por faixa para que todas soem no mesmo volume (alvo −14 dB RMS; chefes −13 dB).
+ * Medido com `node tools/loudness.mjs`, que toca cada música no Chromium e mede o RMS.
+ */
+const MIX: Record<string, number> = {
+  creditos: 0.57, vale: 0.59, gameover: 0.59, forte: 0.6, vitoria: 0.64, cassino: 0.83, ceu: 0.83, caverna: 0.89, navio: 0.94,
+  recife: 1, praia: 1, titulo: 1, mapa: 1.1, chefe: 1.26, chefefinal: 1.27, farol: 1.13, bosque: 1.13, penhasco: 1.16, minas: 1.65,
+};
+for (const [k, g] of Object.entries(MIX)) if (MUSIC[k]) MUSIC[k].gain = g;
+MUSIC.bonus.gain = MIX.cassino;
