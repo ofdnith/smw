@@ -3,7 +3,7 @@
  * cada token é uma semicolcheia; '.' pausa, '-' prolonga a nota anterior; '|' só separa compassos.
  */
 import type { Song, Channel } from '../../engine/audio/sequencer';
-import type { Voice } from '../../engine/audio/synth';
+import type { Voice, EchoParams } from '../../engine/audio/synth';
 
 const LEAD: Voice = { wave: 'p25', a: 0.005, d: 0.08, s: 0.55, r: 0.08, vol: 0.5, vibDepth: 6, vibRate: 5.5 };
 const LEAD_SOFT: Voice = { wave: 'tri', a: 0.01, d: 0.1, s: 0.7, r: 0.15, vol: 0.6, vibDepth: 8, vibRate: 5 };
@@ -377,6 +377,108 @@ MUSIC.cassino = {
     drums(x('k . h . s . h . k . h . s . h h', 8)),
   ],
 };
+
+// ---------------------------------------------------------------------------
+// Orquestração para o chip de samples.
+// As partes acima foram escritas por papel (melodia, harmonia, baixo…); aqui cada ilha escolhe
+// seus instrumentos, o pan de cada voz, o eco e, quando cabe nas 8 vozes, uma dobra da melodia.
+// ---------------------------------------------------------------------------
+
+const S = (inst: string, v: Omit<Voice, 'inst'>): Voice => ({ inst, ...v });
+const sustain = (inst: string, vol: number, vib = 0): Voice => S(inst, { a: 0.03, d: 0.12, s: 0.82, r: 0.12, vol, vibDepth: vib || undefined, vibRate: vib ? 5.2 : undefined });
+const pluck = (inst: string, vol: number, r = 0.15): Voice => S(inst, { a: 0.001, d: 0.25, s: 0.7, r, vol });
+const padV = (inst: string, vol: number): Voice => S(inst, { a: 0.14, d: 0.2, s: 0.8, r: 0.4, vol });
+
+const I = {
+  flauta: sustain('flauta', 0.55, 14),
+  ocarina: sustain('ocarina', 0.6, 12),
+  metais: S('metais', { a: 0.015, d: 0.18, s: 0.72, r: 0.1, vol: 0.42, vibDepth: 9, vibRate: 5.5 }),
+  acordeao: sustain('acordeao', 0.42, 6),
+  orgao: S('orgao', { a: 0.004, d: 0.1, s: 0.9, r: 0.06, vol: 0.34 }),
+  cordasLead: sustain('cordas', 0.38, 10),
+  cordas: padV('cordas', 0.28),
+  coro: padV('coro', 0.34),
+  pad: padV('pad', 0.32),
+  harpa: pluck('harpa', 0.42, 0.3),
+  violao: pluck('violao', 0.45, 0.2),
+  pizz: pluck('pizz', 0.42, 0.08),
+  baixo: S('baixo', { a: 0.002, d: 0.2, s: 0.75, r: 0.06, vol: 0.85 }),
+  slap: S('slap', { a: 0.001, d: 0.15, s: 0.6, r: 0.05, vol: 0.62 }),
+  marimba: pluck('marimba', 0.55, 0.12),
+  steel: pluck('steel', 0.5, 0.2),
+  sino: pluck('sino', 0.42, 0.6),
+  celesta: pluck('celesta', 0.4, 0.3),
+  eletrico: pluck('eletrico', 0.48, 0.3),
+};
+
+type Role = 'LEAD' | 'LEAD_SOFT' | 'LEAD_SQ' | 'HARM' | 'PAD' | 'BASS' | 'BASS_SAW' | 'ARP' | 'BELLV';
+const ROLE_OF = new Map<Voice, Role>([
+  [LEAD, 'LEAD'], [LEAD_SOFT, 'LEAD_SOFT'], [LEAD_SQ, 'LEAD_SQ'], [HARM, 'HARM'], [PAD, 'PAD'],
+  [BASS, 'BASS'], [BASS_SAW, 'BASS_SAW'], [ARP, 'ARP'], [BELLV, 'BELLV'],
+]);
+const DEFAULT_ROLES: Record<Role, Voice> = {
+  LEAD: I.flauta, LEAD_SOFT: I.ocarina, LEAD_SQ: I.orgao, HARM: I.pizz, PAD: I.cordas,
+  BASS: I.baixo, BASS_SAW: I.slap, ARP: I.harpa, BELLV: I.celesta,
+};
+const PAN: Record<Role, number> = { LEAD: 0, LEAD_SOFT: 0, LEAD_SQ: 0, HARM: 0.35, PAD: -0.3, BASS: 0, BASS_SAW: 0, ARP: -0.35, BELLV: 0.4 };
+const ECHO: Record<Role, number> = { LEAD: 0.5, LEAD_SOFT: 0.55, LEAD_SQ: 0.45, HARM: 0.35, PAD: 0.6, BASS: 0, BASS_SAW: 0, ARP: 0.45, BELLV: 0.8 };
+
+interface Orchestration {
+  roles?: Partial<Record<Role, Voice>>;
+  echo?: EchoParams;
+  /** dobra da melodia: outro instrumento tocando a mesma parte (transposta) */
+  double?: { role: Role; voice: Voice; transpose: number; vol?: number; pan?: number };
+}
+
+const ORCH: Record<string, Orchestration> = {
+  titulo: { roles: { LEAD_SOFT: I.flauta, ARP: I.harpa }, echo: { delay: 0.22, feedback: 0.42, mix: 0.36 }, double: { role: 'LEAD_SOFT', voice: I.cordasLead, transpose: -12, vol: 0.55, pan: -0.25 } },
+  mapa: { roles: { LEAD: I.ocarina, PAD: I.cordas }, echo: { delay: 0.16, feedback: 0.35, mix: 0.3 }, double: { role: 'LEAD', voice: I.celesta, transpose: 12, vol: 0.35, pan: 0.4 } },
+  praia: { roles: { LEAD: I.steel, HARM: I.marimba, BASS: I.slap }, echo: { delay: 0.12, feedback: 0.3, mix: 0.25 }, double: { role: 'LEAD', voice: I.flauta, transpose: 0, vol: 0.4, pan: -0.3 } },
+  bosque: { roles: { LEAD: I.ocarina, LEAD_SOFT: I.ocarina, HARM: I.pizz }, echo: { delay: 0.2, feedback: 0.45, mix: 0.38, tone: 2400 }, double: { role: 'LEAD_SOFT', voice: I.cordasLead, transpose: -12, vol: 0.5, pan: -0.3 } },
+  penhasco: { roles: { LEAD: I.flauta, HARM: I.pizz }, echo: { delay: 0.14, feedback: 0.35, mix: 0.3 }, double: { role: 'LEAD', voice: I.cordasLead, transpose: -12, vol: 0.5, pan: -0.3 } },
+  recife: { roles: { LEAD_SOFT: I.eletrico, BELLV: I.celesta, PAD: I.pad }, echo: { delay: 0.24, feedback: 0.55, mix: 0.45, tone: 2200 } },
+  minas: { roles: { LEAD_SQ: I.marimba, HARM: I.pizz, BASS_SAW: I.slap }, echo: { delay: 0.1, feedback: 0.3, mix: 0.25 }, double: { role: 'LEAD_SQ', voice: I.orgao, transpose: -12, vol: 0.45, pan: -0.3 } },
+  vale: { roles: { LEAD_SOFT: I.ocarina, BELLV: I.sino, PAD: I.coro }, echo: { delay: 0.24, feedback: 0.5, mix: 0.42, tone: 2600 } },
+  farol: { roles: { LEAD: I.metais, HARM: I.pizz }, echo: { delay: 0.18, feedback: 0.4, mix: 0.32 }, double: { role: 'LEAD', voice: I.cordasLead, transpose: -12, vol: 0.5, pan: -0.3 } },
+  ceu: { roles: { LEAD: I.flauta, HARM: I.harpa }, echo: { delay: 0.2, feedback: 0.45, mix: 0.36 }, double: { role: 'LEAD', voice: I.celesta, transpose: 12, vol: 0.35, pan: 0.4 } },
+  forte: { roles: { LEAD_SQ: I.orgao, HARM: I.cordas, BASS_SAW: I.baixo }, echo: { delay: 0.2, feedback: 0.45, mix: 0.36, tone: 2600 } },
+  chefe: { roles: { LEAD: I.metais, BASS_SAW: I.slap, HARM: I.pizz }, echo: { delay: 0.12, feedback: 0.3, mix: 0.25 }, double: { role: 'LEAD', voice: I.cordasLead, transpose: -12, vol: 0.5, pan: -0.3 } },
+  chefefinal: { roles: { LEAD: I.metais, BASS_SAW: I.baixo, ARP: I.pizz }, echo: { delay: 0.14, feedback: 0.35, mix: 0.28 }, double: { role: 'LEAD', voice: I.coro, transpose: -12, vol: 0.6, pan: -0.3 } },
+  vitoria: { roles: { LEAD: I.metais, HARM: I.marimba }, echo: { delay: 0.16, feedback: 0.35, mix: 0.3 } },
+  gameover: { roles: { LEAD_SOFT: I.cordasLead }, echo: { delay: 0.24, feedback: 0.5, mix: 0.42 } },
+  creditos: { roles: { LEAD_SOFT: I.flauta, ARP: I.harpa }, echo: { delay: 0.22, feedback: 0.42, mix: 0.36 }, double: { role: 'LEAD_SOFT', voice: I.cordasLead, transpose: -12, vol: 0.55, pan: -0.25 } },
+  navio: { roles: { LEAD: I.acordeao, ARP: I.violao }, echo: { delay: 0.2, feedback: 0.45, mix: 0.36, tone: 2400 } },
+  caverna: { roles: { BELLV: I.sino, PAD: I.coro }, echo: { delay: 0.24, feedback: 0.58, mix: 0.48, tone: 2400 } },
+  cassino: { roles: { LEAD_SQ: I.eletrico, ARP: I.pizz }, echo: { delay: 0.12, feedback: 0.3, mix: 0.25 }, double: { role: 'LEAD_SQ', voice: I.marimba, transpose: 12, vol: 0.35, pan: 0.35 } },
+};
+
+function orchestrate(song: Song, o: Orchestration): void {
+  const roles = { ...DEFAULT_ROLES, ...o.roles };
+  const out: Channel[] = [];
+  for (const c of song.channels) {
+    if (c.drums) {
+      out.push({ ...c, echo: c.echo ?? 0.15 });
+      continue;
+    }
+    const role = ROLE_OF.get(c.voice);
+    if (!role) {
+      out.push(c);
+      continue;
+    }
+    out.push({ ...c, voice: roles[role], pan: c.pan ?? PAN[role], echo: c.echo ?? ECHO[role] });
+  }
+  if (o.double) {
+    const d = o.double;
+    const src = song.channels.find((c) => !c.drums && ROLE_OF.get(c.voice) === d.role);
+    // a dobra entra antes da bateria, para que as vozes emprestadas aos efeitos sejam as de percussão
+    if (src) out.splice(Math.max(0, out.findIndex((c) => c.drums)), 0, { voice: d.voice, pattern: src.pattern, transpose: (src.transpose ?? 0) + d.transpose, vol: (src.vol ?? 1) * (d.vol ?? 0.5), pan: d.pan ?? -0.3, echo: 0.55, layer: src.layer });
+  }
+  song.channels = out;
+  if (o.echo) song.echo = o.echo;
+}
+
+for (const [name, o] of Object.entries(ORCH)) if (MUSIC[name]) orchestrate(MUSIC[name], o);
+
 MUSIC.bonus = { ...MUSIC.cassino, name: 'bonus' };
 
 /** Nomes das faixas na Sala de Som, na ordem em que aparecem. */
@@ -389,12 +491,12 @@ export const TRACK_TITLES: [string, string][] = [
 ];
 
 /**
- * Mixagem: ganho por faixa para que todas soem no mesmo volume (alvo −14 dB RMS; chefes −13 dB).
- * Medido com `node tools/loudness.mjs`, que toca cada música no Chromium e mede o RMS.
+ * Mixagem: ganho por faixa para que todas soem no mesmo volume (alvo −20 dB RMS na saída; chefes −19 dB).
+ * Medido com `node tools/render-music.mjs`, que renderiza cada música offline no Chromium.
  */
 const MIX: Record<string, number> = {
-  creditos: 0.57, vale: 0.59, gameover: 0.59, forte: 0.6, vitoria: 0.64, cassino: 0.83, ceu: 0.83, caverna: 0.89, navio: 0.94,
-  recife: 1, praia: 1, titulo: 1, mapa: 1.1, chefe: 1.26, chefefinal: 1.27, farol: 1.13, bosque: 1.13, penhasco: 1.16, minas: 1.65,
+  chefefinal: 0.85, vitoria: 0.45, chefe: 1.1, penhasco: 0.91, bosque: 0.89, minas: 1.31, farol: 0.95, mapa: 0.97, ceu: 0.77,
+  titulo: 0.97, cassino: 0.93, praia: 1.12, navio: 1.07, recife: 1.2, creditos: 0.9, vale: 1.05, forte: 1.08, caverna: 1.76, gameover: 1.84,
 };
 for (const [k, g] of Object.entries(MIX)) if (MUSIC[k]) MUSIC[k].gain = g;
 MUSIC.bonus.gain = MIX.cassino;
