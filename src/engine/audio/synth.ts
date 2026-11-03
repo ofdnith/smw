@@ -82,6 +82,7 @@ export class Synth {
   musicVol = 0.7;
   sfxVol = 0.8;
   private unlocked = false;
+  private preloading = false;
 
   /** Deve ser chamado dentro de um gesto do usuário. */
   unlock(): void {
@@ -89,6 +90,8 @@ export class Synth {
     const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return;
     this.attach(new Ctor());
+    // o banco de samples nasce num worker; render offline (attach direto) gera por demanda
+    this.preloadAll();
   }
 
   /** Liga o chip a um contexto de áudio (o da página ou um OfflineAudioContext para renderizar em arquivo). */
@@ -119,7 +122,6 @@ export class Synth {
     this.echoTone.connect(this.echoOut).connect(this.musicBus);
     this.setEcho(ECHO_DEFAULT);
     this.buildWaves();
-    this.preloadAll();
     this.unlocked = true;
     if (c instanceof AudioContext && c.state === 'suspended') void c.resume();
   }
@@ -150,33 +152,71 @@ export class Synth {
     this.echoTone.frequency.setTargetAtTime(e.tone ?? 3200, t, 0.02);
   }
 
-  /** Buffer de um instrumento (gerado na primeira vez). */
-  buffer(name: string): AudioBuffer | null {
+  /** Dados de loop e afinação dos instrumentos já prontos (do worker ou da geração local). */
+  private instMeta = new Map<string, { root: number; loopStart?: number; loopEnd?: number }>();
+
+  /** Buffer + metadados de um instrumento. Se o worker ainda não entregou, gera na hora (raro). */
+  ensure(name: string): { buf: AudioBuffer; root: number; loopStart?: number; loopEnd?: number } | null {
     const c = this.ctx;
     if (!c) return null;
     const hit = this.buffers.get(name);
-    if (hit) return hit;
+    const meta = this.instMeta.get(name);
+    if (hit && meta) return { buf: hit, ...meta };
     const inst = instrument(name);
     const b = c.createBuffer(1, inst.data.length, 32000);
     b.getChannelData(0).set(inst.data);
+    const m = { root: inst.root, loopStart: inst.loopStart, loopEnd: inst.loopEnd };
     this.buffers.set(name, b);
-    return b;
+    this.instMeta.set(name, m);
+    return { buf: b, ...m };
   }
 
-  /** Gera todos os samples aos poucos, sem travar a tela. */
+  /**
+   * Sintetiza o banco inteiro num Web Worker: a thread principal (jogo e agendamento de notas)
+   * não trava enquanto os samples nascem. Sem worker (testes, render offline), cai no modo
+   * preguiçoso: `ensure` gera cada instrumento na primeira nota.
+   */
   private preloadAll(): void {
-    const names = [...INSTRUMENT_NAMES];
-    const step = (): void => {
-      const n = names.shift();
-      if (!n) return;
-      this.buffer(n);
-      setTimeout(step, 16);
-    };
-    setTimeout(step, 30);
+    if (this.preloading || typeof Worker === 'undefined') return;
+    this.preloading = true;
+    // os mais urgentes primeiro: efeitos de menu/jogo e o kit de bateria, depois o resto
+    const first = ['blip', 'suave', 'ruido', 'celesta', 'sino', 'bumbo', 'caixa', 'chimbal', 'chimbalab', 'ride', 'steel', 'marimba', 'slap', 'flauta', 'baixo', 'pizz', 'harpa'];
+    const names = [...first, ...INSTRUMENT_NAMES.filter((n) => !first.includes(n))];
+    try {
+      const w = new Worker(new URL('./instrumentWorker.ts', import.meta.url), { type: 'module' });
+      w.onmessage = (e: MessageEvent<{ name: string; data: Float32Array; root: number; loopStart?: number; loopEnd?: number }>) => {
+        const { name, data, root, loopStart, loopEnd } = e.data;
+        const c = this.ctx;
+        if (!c || this.buffers.has(name)) return;
+        const b = c.createBuffer(1, data.length, 32000);
+        b.getChannelData(0).set(data);
+        this.buffers.set(name, b);
+        this.instMeta.set(name, { root, loopStart, loopEnd });
+        if (this.buffers.size >= names.length) {
+          this.preloading = false;
+          w.terminate();
+        }
+      };
+      w.onerror = () => {
+        // worker indisponível (ex.: file:// sem suporte): volta ao modo preguiçoso
+        this.preloading = false;
+        w.terminate();
+      };
+      w.postMessage(names.filter((n) => !this.buffers.has(n)));
+      // cinto de segurança: se nada chegar, reabilita a geração preguiçosa
+      setTimeout(() => {
+        if (this.buffers.size === 0) this.preloading = false;
+      }, 4000);
+    } catch {
+      this.preloading = false;
+    }
   }
 
-  /** Filtro "debaixo d'água" para a música. */
+  /** Filtro "debaixo d'água" para a música. Só agenda quando o estado muda (é chamado todo frame). */
+  private underwater = false;
   setUnderwater(on: boolean): void {
+    if (on === this.underwater) return;
+    this.underwater = on;
     if (this.musicFilter) this.musicFilter.frequency.setTargetAtTime(on ? 700 : 20000, this.now, 0.1);
   }
 
@@ -253,17 +293,22 @@ export class Synth {
     }
 
     if (v.inst) {
-      const buf = this.buffer(v.inst);
-      if (!buf) return stopAt;
-      const inst = instrument(v.inst);
-      const src = c.createBufferSource();
-      src.buffer = buf;
-      if (inst.loopStart !== undefined && inst.loopEnd !== undefined) {
-        src.loop = true;
-        src.loopStart = inst.loopStart / 32000;
-        src.loopEnd = inst.loopEnd / 32000;
+      // enquanto o worker sintetiza o banco, nota de instrumento ausente é pulada em vez de
+      // gerada na hora (gerar aqui travaria o quadro; a voz entra sozinha em <1 s)
+      if (this.preloading && !this.buffers.has(v.inst)) {
+        gain.disconnect();
+        return stopAt;
       }
-      const rate = (f: number): number => Math.max(0.01, f / inst.root);
+      const got = this.ensure(v.inst);
+      if (!got) return stopAt;
+      const src = c.createBufferSource();
+      src.buffer = got.buf;
+      if (got.loopStart !== undefined && got.loopEnd !== undefined) {
+        src.loop = true;
+        src.loopStart = got.loopStart / 32000;
+        src.loopEnd = got.loopEnd / 32000;
+      }
+      const rate = (f: number): number => Math.max(0.01, f / got.root);
       src.playbackRate.setValueAtTime(rate(o.freq), t0);
       if (o.slideTo) src.playbackRate.exponentialRampToValueAtTime(rate(o.slideTo), t0 + (o.slideTime ?? o.dur));
       if (v.detune) src.detune.value = v.detune;

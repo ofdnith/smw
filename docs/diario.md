@@ -115,3 +115,20 @@ Pedido: deixar o jogo "muito próximo aos games de Super Nintendo" em todas as v
 **Números**: 300 testes de unidade, 5 e2e, 24 replays; render ≤ 3,5 ms/quadro no pior caso medido (fase submersa).
 
 **Próximo**: F3, a Ilha 1 inteira em 16 bits (Lumi com ~60 quadros desenhados à mão, tileset e fundos repintados para 256×224, fases refeitas, mini-chefe no forte). Precisa do playtest humano para fechar.
+
+## 2026-11-03 — correções do primeiro playtest humano
+Primeiro retorno de alguém jogando: "sprites teleportam ao virar" e "o jogo engasgou ao entrar na água na primeira fase".
+
+**Espelhamento (o "teleporte")**: desde a v1.2, espelhar um sprite também espelhava a âncora (`ox` virava `w-1-ox`), então **todo** sprite olhando para a esquerda desenhava `w-1` px fora do corpo físico — a Lumi (16 px de largura) pulava 15 px ao virar, e inimigos andando para a esquerda ficavam com o visual deslocado da hitbox (pisões pareciam injustos). O espelhamento agora é "no lugar": o conteúdo inverte dentro da própria caixa e a âncora não muda (`compileFrame`). Os acessórios de poder (concha, folha, lanterna), que compensavam o defeito no olho, foram reposicionados pela conta certa de espelho; o olho da Bolota já usava a conta certa. Conferido com capturas olhando para os dois lados.
+
+**Engasgo na água**: a síntese dos instrumentos rodava na thread principal (até 57 ms por instrumento, ~850 ms no total). Passando rápido pelo título, a geração continuava durante o jogo; e a primeira nota de um instrumento ainda não pronto (o splash ao mergulhar, por exemplo) gerava o sample na hora, travando o quadro e atrasando o agendamento de notas (o "bufo" no áudio). Agora:
+- `instrumentWorker.ts`: o banco inteiro nasce num **Web Worker** (ordem de prioridade: efeitos e bateria primeiro), com o PCM transferido sem cópia;
+- enquanto o worker trabalha, nota de instrumento ausente é **pulada** em vez de gerada na hora (a voz entra sozinha em <1 s);
+- destravar o áudio caiu de 216 ms para 29 ms, zero *long tasks*, splash + filtro de mergulho em 1 ms;
+- o render offline (`render-music.mjs`) continua gerando por demanda (sem worker) — conferido que não sai WAV mudo;
+- `setUnderwater` só agenda o filtro quando o estado muda (era chamado todo frame);
+- `waveLines` desenha faixas de linhas com o mesmo deslocamento em vez de linha a linha (render de 4-2: 3,4 → 2,2 ms).
+
+**Pendente**: a arte em si continua a da v1.2 — refazer tudo em pixel art de autoria é a F3 (`docs/PLANO-16BIT.md`). A audição da trilha nova (portão da F2) também segue pendente.
+
+**Números**: 300 testes, 5 e2e, 24 replays, tudo verde.

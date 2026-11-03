@@ -81,7 +81,10 @@ export function compileFrame(text: string, palette: Palette, ox = 0, oy = 0, fli
     }
   }
   ctx.putImageData(data, 0, 0);
-  return { img: canvas, w, h, ox: flipX ? w - 1 - ox : ox, oy };
+  // Espelhamento "no lugar": o conteúdo inverte dentro da própria caixa, então a âncora não muda.
+  // (Antes a âncora era espelhada junto, e todo sprite virado para a esquerda desenhava w-1 px
+  // fora do corpo físico — o "teleporte" ao virar.)
+  return { img: canvas, w, h, ox, oy };
 }
 
 /** Limite do console: cores visíveis por sub-paleta de sprite (a 16ª é a transparência). */

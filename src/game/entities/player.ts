@@ -980,11 +980,11 @@ export class Player extends Entity {
     r.drawSprite({ palette: def.palette, frames: poseFrames }, frame, sx, sy, flipPose);
     // acessório do poder
     if (this.power === 'shell' && this.pose !== 'spin') {
-      r.drawSprite(ACCESSORY.shell, 0, sx + (flip ? 9 : -1), sy + 10, flip);
+      r.drawSprite(ACCESSORY.shell, 0, sx + (flip ? 10 : -1), sy + 10, flip);
     } else if (this.power === 'leaf') {
-      r.drawSprite(ACCESSORY.leaf, Math.floor(this.animT / 12) % 2, sx + (flip ? 8 : 2), sy - 3, flip);
+      r.drawSprite(ACCESSORY.leaf, Math.floor(this.animT / 12) % 2, sx + (flip ? 6 : 2), sy - 3, flip);
     } else if (this.power === 'lantern' && this.pose !== 'spin') {
-      r.drawSprite(ACCESSORY.lantern, Math.floor(this.animT / 8) % 2, sx + (flip ? -4 : 12), sy + 10, flip);
+      r.drawSprite(ACCESSORY.lantern, Math.floor(this.animT / 8) % 2, sx + (flip ? 0 : 12), sy + 10, flip);
     }
   }
 }

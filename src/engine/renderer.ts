@@ -111,16 +111,27 @@ export class Renderer {
     const top = Math.max(0, Math.floor(y0)), bot = Math.min(VIEW_H, Math.ceil(y1));
     if (bot <= top) return;
     const s = this.scratchCtx();
-    s.clearRect(0, 0, VIEW_W, VIEW_H);
-    s.drawImage(this.buffer, 0, 0);
-    for (let y = top; y < bot; y++) {
+    s.clearRect(0, top, VIEW_W, bot - top);
+    s.drawImage(this.buffer, 0, top, VIEW_W, bot - top, 0, top, VIEW_W, bot - top);
+    // linhas consecutivas com o mesmo deslocamento viram uma faixa só (menos chamadas de desenho)
+    let runStart = top;
+    let runDx = Math.round(Math.sin((top + phase) * ((2 * Math.PI) / period)) * amp);
+    const flush = (end: number): void => {
+      const dx = runDx, h = end - runStart;
+      if (dx === 0 || h <= 0) return;
+      this.ctx.drawImage(this.scratch!, 0, runStart, VIEW_W, h, dx, runStart, VIEW_W, h);
+      if (dx > 0) this.ctx.drawImage(this.scratch!, 0, runStart, 1, h, 0, runStart, dx, h);
+      else this.ctx.drawImage(this.scratch!, VIEW_W - 1, runStart, 1, h, VIEW_W + dx, runStart, -dx, h);
+    };
+    for (let y = top + 1; y < bot; y++) {
       const dx = Math.round(Math.sin((y + phase) * ((2 * Math.PI) / period)) * amp);
-      if (dx === 0) continue;
-      this.ctx.drawImage(this.scratch!, 0, y, VIEW_W, 1, dx, y, VIEW_W, 1);
-      // borda que ficou descoberta: repete o pixel da ponta
-      if (dx > 0) this.ctx.drawImage(this.scratch!, 0, y, 1, 1, 0, y, dx, 1);
-      else this.ctx.drawImage(this.scratch!, VIEW_W - 1, y, 1, 1, VIEW_W + dx, y, -dx, 1);
+      if (dx !== runDx) {
+        flush(y);
+        runStart = y;
+        runDx = dx;
+      }
     }
+    flush(bot);
   }
 
   /** Mosaico do console: blocos de `size` pixels (1 = desligado). */
